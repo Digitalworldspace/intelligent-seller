@@ -1,0 +1,64 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Intelligent Seller</title>
+<meta name="description" content="Search once. The Intelligent Seller finds the best product on trusted Indian shopping platforms and tells you why.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,500;12..96,700;12..96,800&family=Hind+Vadodara:wght@400;500;600;700&display=swap">
+<link rel="stylesheet" href="styles.css">
+</head>
+<body>
+<div class="wrap">
+  <header class="top">
+    <div class="brand"><div class="mark">IS</div><div><b>Intelligent Seller</b><small data-t="tag"></small></div></div>
+    <div class="lang" role="group" aria-label="Language">
+      <button id="lang-en" data-lang="en" aria-pressed="true">English</button>
+      <button id="lang-gu" data-lang="gu" aria-pressed="false">ગુજરાતી</button>
+    </div>
+  </header>
+
+  <section class="search">
+    <h1 data-t="hero"></h1>
+    <p data-t="sub"></p>
+    <form class="bar" id="searchForm" role="search">
+      <input id="q" name="q" autocomplete="off" maxlength="100" aria-label="Search for a product">
+      <button type="submit" id="goBtn" data-t="go"></button>
+    </form>
+    <div class="chips" id="chips"></div>
+  </section>
+
+  <div class="floor" id="floor">
+    <div class="col">
+      <div class="seller">
+        <div class="avatar" aria-hidden="true">IS</div>
+        <div class="bubble" aria-live="polite"><div class="who" data-t="who"></div><div id="sellerMsg"></div></div>
+      </div>
+      <article class="pick" id="pick" hidden></article>
+      <section class="shelf" id="shelfWrap" hidden>
+        <h3 data-t="shelf"></h3>
+        <div id="shelf" class="shelf"></div>
+      </section>
+      <section class="sites">
+        <h3 data-t="sitesTitle"></h3>
+        <p class="muted" data-t="sitesSub"></p>
+        <div id="sites" class="site-grid"></div>
+      </section>
+    </div>
+    <aside class="col">
+      <section class="desk" id="desk" hidden></section>
+      <section class="desk" id="howDesk"></section>
+    </aside>
+  </div>
+
+  <section class="notes">
+    <div class="note"><h4 data-t="discT"></h4><p data-t="disc1"></p><p data-t="disc2"></p></div>
+    <div class="note"><h4 data-t="respT"></h4><p data-t="resp1"></p><p data-t="resp2"></p></div>
+  </section>
+  <p class="sample" id="stamp"></p>
+</div>
+<script src="config.js"></script>
+<script src="app.js" type="module"></script>
+</body>
+</html>
