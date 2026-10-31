@@ -1,0 +1,27 @@
+services:
+  - type: web
+    name: intelligent-seller
+    runtime: node
+    plan: free
+    buildCommand: npm install
+    startCommand: npm start
+    healthCheckPath: /api/health
+    envVars:
+      - key: AMAZON_CREDENTIAL_ID
+        sync: false
+      - key: AMAZON_CREDENTIAL_SECRET
+        sync: false
+      - key: AMAZON_CREDENTIAL_VERSION
+        value: "3.2"
+      - key: AMAZON_TOKEN_URL
+        value: https://api.amazon.co.uk/auth/o2/token
+      - key: AMAZON_PARTNER_TAG
+        sync: false
+      - key: FLIPKART_AFFILIATE_ID
+        sync: false
+      - key: FLIPKART_AFFILIATE_TOKEN
+        sync: false
+      - key: AFFILIATE_LINK_TEMPLATE
+        sync: false
+      - key: ANTHROPIC_API_KEY
+        sync: false

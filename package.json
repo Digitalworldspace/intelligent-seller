@@ -1,0 +1,20 @@
+{
+  "name": "intelligent-seller",
+  "version": "1.0.0",
+  "description": "AI shopping portal: the customer only searches, the Intelligent Seller finds the best product on trusted platforms (Amazon.in, Flipkart and more) and explains why.",
+  "type": "module",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js",
+    "dev": "node --watch server.js",
+    "test": "node --test test/*.test.js"
+  },
+  "engines": {
+    "node": ">=18"
+  },
+  "dependencies": {
+    "dotenv": "^16.4.5",
+    "express": "^4.21.2"
+  },
+  "license": "MIT"
+}
