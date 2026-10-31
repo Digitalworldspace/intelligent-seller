@@ -130,6 +130,22 @@ table.cmp{width:100%;border-collapse:collapse;font-size:14.5px;min-width:640px}
 @media (prefers-color-scheme: dark){.cmp a.view{color:var(--good)}}
 .cmp .save{color:var(--good);font-weight:600}
 
+@media (max-width:640px){
+  .table-wrap{margin:0;padding:0;overflow:visible}
+  table.cmp{min-width:0}
+  .cmp thead{display:none}
+  .cmp,.cmp tbody{display:block}
+  .cmp tr{display:flex;flex-wrap:wrap;gap:6px 14px;padding:12px 10px;border-bottom:1px solid var(--line);border-radius:10px}
+  .cmp td{display:block;border:0;padding:0;text-align:left}
+  .cmp td.r{text-align:left}
+  .cmp td:first-child{flex-basis:100%}
+  .cmp td[data-l]::before{content:attr(data-l);display:block;font-size:11.5px;color:var(--muted);text-transform:uppercase;letter-spacing:.04em;font-weight:600}
+  .cmp td.go{margin-left:auto;align-self:flex-end}
+  .cmp .p-cell{min-width:0}
+  .cmp tr.is-best{background:var(--primary-soft)}
+  .cmp tr.is-best td{background:none}
+}
+
 /* ---------- Platform cards ---------- */
 .platforms{display:grid;grid-template-columns:repeat(auto-fill,minmax(230px,1fr));gap:12px}
 .plat{border:1px solid var(--line);border-radius:12px;padding:14px;display:flex;flex-direction:column;gap:10px;background:var(--surface)}
