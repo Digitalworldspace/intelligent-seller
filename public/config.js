@@ -6,7 +6,7 @@ window.IS_CONFIG = {
   apiBase: "",
 
   // Affiliate ids used in the trusted-site links. These are visible in links anyway, so they are not secrets.
-  amazonTag: "",          // e.g. "yourname-21"
+  amazonTag: "",          // e.g. "styleoflife08-21"
   flipkartAffid: "",      // your Flipkart affiliate id
   // Affiliate network link template for the other stores. {url} is replaced by the page address.
   // e.g. "https://linksredirect.com/?cid=YOUR_ID&source=linkkit&url={url}"
