@@ -19,10 +19,10 @@ The customer only searches. The Intelligent Seller looks up products on India's 
 
 - **Chat style, mobile first**: the seller greets the customer, the search box is pinned at the bottom like a messaging app, and the best pick, its benefits, other options and trusted sites appear inside the conversation.
 - **10 languages**: English, हिन्दी, ગુજરાતી, मराठी, বাংলা, தமிழ், తెలుగు, ಕನ್ನಡ, മലയാളം, ਪੰਜਾਬੀ. The site picks the phone's language automatically; customers can change it from the top bar. All text lives in `public/i18n.js`. Please have a native speaker review each language before launch.
-- **₹1,000 cashback from you**: set in `public/config.js` (`cashback.amount`, `cashback.minOrder`). Customers claim it with their order ID and UPI ID.
+- **Up to ₹1,000 cashback on every order**, paid by you. Every customer who buys through your link gets it, in slabs: bigger order, bigger cashback (default ₹999+ → ₹50, ₹4,999+ → ₹200, ₹14,999+ → ₹500, ₹24,999+ → ₹1,000). Set the slabs in `public/config.js` (`cashback.tiers`) and `CASHBACK_TIERS` on the server. Keep each slab below the commission you expect for that order size. Customers claim it with their order ID and UPI ID.
   - With the server running, claims are saved to `data/claims.jsonl`. Download them with `curl -H "x-admin-key: YOUR_ADMIN_KEY" https://your-server/api/cashback/claims`.
   - On GitHub Pages only (no server), customers see the details to send you; add your WhatsApp number or email under `contact` in `public/config.js`.
-  - Check each claim against your affiliate dashboard before paying. Make sure your commission covers the cashback, or set a minimum order amount.
+  - Check each claim against your affiliate dashboard before paying.
 
 ## Where the data comes from
 

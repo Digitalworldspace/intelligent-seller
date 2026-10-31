@@ -7,7 +7,13 @@
 import { LANGS, CHIP_QUERIES, t as tr, fmt, isLang } from "./i18n.js";
 
 const CFG = window.IS_CONFIG || {};
-const CB = { enabled: true, amount: 1000, minOrder: 0, ...(CFG.cashback || {}) };
+const CB = { enabled: true, ...(CFG.cashback || {}) };
+// Slabs: bigger order, bigger cashback. Older configs with a single amount still work.
+const TIERS = (CB.tiers && CB.tiers.length ? CB.tiers : [{ min: CB.minOrder || 0, amount: CB.amount || 1000 }])
+  .map((x) => ({ min: Number(x.min) || 0, amount: Number(x.amount) || 0 })).sort((a, b) => a.min - b.min);
+const MAX_CB = Math.max(0, ...TIERS.map((x) => x.amount));
+const MIN_ORDER = TIERS.length ? TIERS[0].min : 0;
+const cbFor = (price) => { let a = 0; for (const x of TIERS) if (price >= x.min) a = x.amount; return CB.enabled ? a : 0; };
 const CONTACT = CFG.contact || {};
 const BASE = (CFG.apiBase || "").replace(/\/$/, "");
 
@@ -28,8 +34,8 @@ function pickLang() {
 }
 let lang = pickLang();
 const t = (key) => tr(lang, key);
-const amt = () => inr(CB.amount);
-const cbEligible = (price) => CB.enabled && (!CB.minOrder || price >= CB.minOrder);
+const amt = () => inr(MAX_CB);
+const cbEligible = (price) => cbFor(price) > 0;
 
 // ---------- Icons ----------
 const ICON = {
@@ -89,14 +95,20 @@ function advicePanel(lines) {
     ${lines.map((l) => `<p>${esc(l)}</p>`).join("")}</section>`;
 }
 
+function tierTable() {
+  if (!CB.enabled || !TIERS.length) return "";
+  return `<table class="tiers"><thead><tr><th>${esc(t("tOrder"))}</th><th class="r">${esc(t("tCash"))}</th></tr></thead><tbody>${TIERS.map((x) =>
+    `<tr><td class="num">₹${inr(x.min)}+</td><td class="r num"><b>₹${inr(x.amount)}</b></td></tr>`).join("")}</tbody></table>`;
+}
+
 function cashPanel() {
   if (!CB.enabled) return "";
   return `<section class="panel cash-panel">
     <div class="label">${esc(t("kCash"))}</div>
-    <div class="cash-amt num">₹${amt()}</div>
+    <div class="cash-amt num">${esc(fmt(t("upTo"), { amt: amt() }))}</div>
     <h3>${esc(fmt(t("cbTitle"), { amt: amt() }))}</h3>
     <p>${esc(fmt(t("cbSub"), { amt: amt() }))}</p>
-    ${CB.minOrder ? `<p class="min">${esc(fmt(t("cbMin"), { min: inr(CB.minOrder) }))}</p>` : ""}
+    ${tierTable()}
     <div class="cash-actions"><button type="button" class="btn btn-cash" data-act="claim">${esc(t("cbClaim"))}</button><button type="button" class="btn btn-outline" data-act="terms">${esc(t("cbHow"))}</button></div>
   </section>`;
 }
@@ -136,7 +148,7 @@ function pickPanel(b, data) {
         <div class="meta">${ratingText(b)}<span>${esc(b.platformName)}</span></div>
         ${data.seller.bestLine ? `<p class="bestline">${esc(data.seller.bestLine)}</p>` : ""}
         <div class="price-row"><span class="price num">₹${inr(b.price)}</span>${b.mrp ? `<span class="mrp num">₹${inr(b.mrp)}</span><span class="off num">${pc}% ${esc(t("off"))}</span>` : ""}</div>
-        ${cbEligible(b.price) ? `<div class="cash-note">${ICON.gift}${esc(fmt(t("cbChip"), { amt: amt() }))}</div>` : ""}
+        ${cbEligible(b.price) ? `<div class="cash-note">${ICON.gift}${esc(fmt(t("cbChip"), { amt: inr(cbFor(b.price)) }))}</div>` : ""}
       </div>
     </div>
     <div class="pick-section">
@@ -179,7 +191,7 @@ function facPanel(b) {
 function setBuybar(b) {
   const bar = $("buybar");
   if (!b) { bar.hidden = true; document.body.classList.remove("has-buybar"); return; }
-  bar.innerHTML = `<div><b class="num">₹${inr(b.price)}</b>${cbEligible(b.price) ? `<span>${esc(fmt(t("cbChip"), { amt: amt() }))}</span>` : ""}</div>
+  bar.innerHTML = `<div><b class="num">₹${inr(b.price)}</b>${cbEligible(b.price) ? `<span>${esc(fmt(t("cbChip"), { amt: inr(cbFor(b.price)) }))}</span>` : ""}</div>
     <a class="btn btn-primary" href="${esc(safeUrl(b.url))}" target="_blank" rel="sponsored nofollow noopener">${esc(fmt(t("buyOn"), { p: b.platformName }))}</a>`;
   bar.hidden = false;
   document.body.classList.add("has-buybar");
@@ -189,7 +201,7 @@ function setBuybar(b) {
 function renderWelcome() {
   const sites = sitesFor("");
   $("results").innerHTML = `
-    ${kpis([[t("kPlatforms"), String(sites.length)], CB.enabled && [t("kCash"), `₹${amt()}`, "cash"]])}
+    ${kpis([[t("kPlatforms"), String(sites.length)], CB.enabled && [t("kCash"), fmt(t("upTo"), { amt: amt() }), "cash"]])}
     <div class="grid" style="margin-top:18px">
       <div class="col">${platformsPanel(sites)}</div>
       <aside class="col">${advicePanel(t("greet"))}${cashPanel()}${trustPanel()}</aside>
@@ -213,7 +225,7 @@ function renderResult(data) {
       [t("kPlatforms"), String(platformCount)],
       minPrice && [t("kBest"), `₹${inr(minPrice)}`],
       maxSave > 0 && [t("kSave"), `₹${inr(maxSave)}`, "save"],
-      CB.enabled && [t("kCash"), `₹${amt()}`, "cash"]
+      CB.enabled && (b && cbEligible(b.price) ? [t("kCash"), `₹${inr(cbFor(b.price))}`, "cash"] : [t("kCash"), fmt(t("upTo"), { amt: amt() }), "cash"])
     ])}
     <div class="grid" style="margin-top:18px">
       <div class="col">
@@ -297,7 +309,7 @@ const head = (title) => `<div class="sheet-head"><h2 id="sheetTitle">${esc(title
 function openTerms() {
   openSheet(`${head(t("termsBtn"))}
     ${CB.enabled ? `<div class="sec"><h3>${esc(t("cbHow"))}</h3><ol>${t("cbSteps").map((s) => `<li>${esc(s)}</li>`).join("")}</ol></div>
-    <div class="sec"><h3>${esc(t("cbTermsT"))}</h3><ul>${t("cbTerms").map((s) => `<li>${esc(s)}</li>`).join("")}${CB.minOrder ? `<li>${esc(fmt(t("cbMin"), { min: inr(CB.minOrder) }))}</li>` : ""}</ul></div>` : ""}
+    <div class="sec"><h3>${esc(t("cbTermsT"))}</h3><ul>${t("cbTerms").map((s) => `<li>${esc(s)}</li>`).join("")}</ul></div><div class="sec">${tierTable()}</div>` : ""}
     <div class="sec"><h3>${esc(t("discT"))}</h3><p>${esc(t("disc1"))}</p><p>${esc(t("disc2"))}</p></div>
     <div class="sec"><h3>${esc(t("respT"))}</h3><p>${esc(t("resp1"))}</p><p>${esc(t("resp2"))}</p></div>
     ${CB.enabled ? `<button type="button" class="btn btn-cash btn-block" data-act="claim">${esc(t("cbClaim"))}</button>` : ""}`);
@@ -323,7 +335,7 @@ async function submitClaim(form) {
   const err = $("c-err");
   const fail = (m) => { err.textContent = m; err.hidden = false; };
   if (!f.orderId.trim() || !f.name.trim() || !f.payTo.trim() || !amount) return fail(t("fErr"));
-  if (CB.minOrder && amount < CB.minOrder) return fail(fmt(t("fMinErr"), { min: inr(CB.minOrder) }));
+  if (MIN_ORDER && amount < MIN_ORDER) return fail(fmt(t("fMinErr"), { min: inr(MIN_ORDER) }));
   err.hidden = true;
   const claim = { orderId: f.orderId.trim(), platform: f.platform, amount, name: f.name.trim(), payTo: f.payTo.trim(), lang };
 

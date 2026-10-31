@@ -100,6 +100,14 @@ app.get("/api/search", async (req, res) => {
 
 // ---------- Cashback claims ----------
 const recent = new TtlCache(60 * 60 * 1000, 5000);
+// Cashback slabs, same as public/config.js. Override with CASHBACK_TIERS, e.g. [{"min":999,"amount":50}, ...]
+const DEFAULT_TIERS = [{ min: 999, amount: 50 }, { min: 4999, amount: 200 }, { min: 14999, amount: 500 }, { min: 24999, amount: 1000 }];
+const TIERS = (() => {
+  try { const v = JSON.parse(env.CASHBACK_TIERS || "null"); if (Array.isArray(v) && v.length) return v.map((x) => ({ min: Number(x.min) || 0, amount: Number(x.amount) || 0 })).sort((a, b) => a.min - b.min); }
+  catch { console.warn("CASHBACK_TIERS is not valid JSON; using the default slabs."); }
+  return DEFAULT_TIERS;
+})();
+const cashbackFor = (orderAmount) => { let a = 0; for (const x of TIERS) if (orderAmount >= x.min) a = x.amount; return a; };
 const clean = (v, max) => String(v ?? "").replace(/[\u0000-\u001f]/g, " ").trim().slice(0, max);
 
 app.post("/api/cashback", express.json({ limit: "4kb" }), (req, res) => {
@@ -122,8 +130,8 @@ app.post("/api/cashback", express.json({ limit: "4kb" }), (req, res) => {
   if (!claim.orderId || !claim.platform || !claim.name || !claim.payTo || claim.amount <= 0) {
     return res.status(400).json({ error: "Please fill in every field." });
   }
-  const min = Number(env.CASHBACK_MIN_ORDER) || 0;
-  if (min && claim.amount < min) return res.status(400).json({ error: `Cashback applies to orders above ₹${min}.` });
+  claim.cashback = cashbackFor(claim.amount);
+  if (!claim.cashback) return res.status(400).json({ error: `Cashback starts from orders of ₹${TIERS[0]?.min ?? 0}.` });
 
   try {
     fs.mkdirSync(DATA_DIR, { recursive: true });

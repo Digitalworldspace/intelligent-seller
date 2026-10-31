@@ -12,11 +12,18 @@ window.IS_CONFIG = {
   // e.g. "https://linksredirect.com/?cid=YOUR_ID&source=linkkit&url={url}"
   linkTemplate: "",
 
-  // Cashback paid by you to the customer.
+  // Cashback paid by you to the customer: guaranteed on every eligible order, "up to ₹1,000".
+  // Bigger order, bigger cashback. Each slab: orders of `min` ₹ or more get `amount` ₹.
+  // Keep each amount below the affiliate commission you expect on an order of that size,
+  // so cashback never costs more than you earn. Keep CASHBACK_TIERS on the server the same.
   cashback: {
     enabled: true,
-    amount: 1000,   // ₹ paid per order
-    minOrder: 0     // minimum order amount in ₹ (0 = any order). Keep it the same as CASHBACK_MIN_ORDER on the server.
+    tiers: [
+      { min: 999, amount: 50 },
+      { min: 4999, amount: 200 },
+      { min: 14999, amount: 500 },
+      { min: 24999, amount: 1000 }
+    ]
   },
 
   // Where customers send cashback claims when the server isn't connected.
