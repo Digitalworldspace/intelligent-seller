@@ -11,6 +11,19 @@ export function wrapAffiliate(url, env, platformKey) {
   return tpl ? tpl.replace("{url}", encodeURIComponent(url)) : url;
 }
 
+// Make sure a product link from Amazon or Flipkart carries your affiliate id,
+// even if the API ever returns a link without it.
+export function ensureAffiliate(url, platformKey, env) {
+  try {
+    const u = new URL(url);
+    if (platformKey === "amazon" && env.AMAZON_PARTNER_TAG && !u.searchParams.get("tag")) u.searchParams.set("tag", env.AMAZON_PARTNER_TAG);
+    if (platformKey === "flipkart" && env.FLIPKART_AFFILIATE_ID && !u.searchParams.get("affid")) u.searchParams.set("affid", env.FLIPKART_AFFILIATE_ID);
+    return u.toString();
+  } catch {
+    return url;
+  }
+}
+
 export function platformLinks(q, env) {
   const isFashion = FASHION_WORDS.test(q);
   const isBeauty = BEAUTY_WORDS.test(q);

@@ -10,7 +10,7 @@ import { searchAmazon, amazonConfigured } from "./src/providers/amazon.js";
 import { searchFlipkart, flipkartConfigured } from "./src/providers/flipkart.js";
 import { scoreProducts, SCORE_PARTS } from "./src/lib/score.js";
 import { aiSeller } from "./src/lib/seller.js";
-import { platformLinks, facilitiesFor } from "./src/lib/links.js";
+import { platformLinks, facilitiesFor, ensureAffiliate } from "./src/lib/links.js";
 import { TtlCache } from "./src/lib/util.js";
 import { t, isLang } from "./public/i18n.js";
 
@@ -47,6 +47,7 @@ app.get("/api/health", (_req, res) => {
     ok: true,
     providers: Object.fromEntries(PROVIDERS.map((p) => [p.key, p.ready(env)])),
     ai: Boolean(env.ANTHROPIC_API_KEY),
+    affiliate: { amazonTag: Boolean(env.AMAZON_PARTNER_TAG), flipkartId: Boolean(env.FLIPKART_AFFILIATE_ID), otherStores: Boolean(env.AFFILIATE_LINK_TEMPLATE) },
     claims: true
   });
 });
@@ -67,7 +68,7 @@ app.get("/api/search", async (req, res) => {
     catch (e) { errors.push({ platform: PLATFORMS[p.key].name, message: e.message }); console.warn(p.key, e.message); return []; }
   }));
 
-  const products = results.flat();
+  const products = results.flat().map((p) => ({ ...p, url: ensureAffiliate(p.url, p.platform, env) }));
   let ranked = scoreProducts(products, q);
   const sites = platformLinks(q, env);
   const platformsWithData = new Set(products.map((p) => p.platform)).size;

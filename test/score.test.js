@@ -35,3 +35,11 @@ test("no products still gives the customer trusted site links", () => {
   assert.ok(!links.some((l) => l.key === "myntra"), "fashion sites only for fashion searches");
   assert.ok(platformLinks("running shoes", {}, "en").some((l) => l.key === "myntra"));
 });
+
+import { ensureAffiliate } from "../src/lib/links.js";
+test("product links always carry your affiliate ids", () => {
+  const env = { AMAZON_PARTNER_TAG: "me-21", FLIPKART_AFFILIATE_ID: "myid" };
+  assert.match(ensureAffiliate("https://www.amazon.in/dp/B0X", "amazon", env), /tag=me-21/);
+  assert.equal(ensureAffiliate("https://www.amazon.in/dp/B0X?tag=other-21", "amazon", env), "https://www.amazon.in/dp/B0X?tag=other-21");
+  assert.match(ensureAffiliate("https://www.flipkart.com/p/x", "flipkart", env), /affid=myid/);
+});

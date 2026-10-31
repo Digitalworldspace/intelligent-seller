@@ -1,0 +1,76 @@
+<!doctype html>
+<html lang="gu">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="robots" content="noindex, nofollow">
+<title>Affiliate Setup Check</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Hind+Vadodara:wght@400;500;600;700&display=swap">
+<link rel="stylesheet" href="styles.css">
+<style>
+  .status{display:inline-flex;align-items:center;gap:6px;border-radius:999px;padding:3px 10px;font-size:13px;font-weight:700;white-space:nowrap}
+  .ok{background:var(--good-soft);color:var(--good)}
+  .bad{background:#fde7e4;color:#b3261e}
+  @media (prefers-color-scheme: dark){.bad{background:#3a1814;color:#ff8a7a}}
+  .rows{display:flex;flex-direction:column;gap:12px}
+  .row{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:6px 14px;align-items:start;border:1px solid var(--line);border-radius:12px;padding:14px;background:var(--surface)}
+  .row h3{font-size:16px}
+  .row p{margin:2px 0 0;font-size:14px;color:var(--muted)}
+  .row code,.mono{font-family:ui-monospace,Menlo,Consolas,monospace;font-size:13px;word-break:break-all;background:var(--sunk);border-radius:6px;padding:2px 6px}
+  .row .links{grid-column:1/-1;display:flex;flex-wrap:wrap;gap:8px}
+  .sum{display:flex;gap:12px;align-items:center;flex-wrap:wrap}
+  .sum b{font-size:22px}
+  ol.steps{margin:0;padding-left:20px;display:grid;gap:6px;font-size:15px}
+</style>
+</head>
+<body>
+<header class="top"><div class="top-in"><div class="brand"><div class="mark" aria-hidden="true">IS</div><div><b>Affiliate Setup Check</b><small>ફક્ત તમારા માટે (owner)</small></div></div><a class="btn btn-quiet" href="./">← Site</a></div></header>
+<main class="wrap">
+  <section class="panel sum" id="summary"></section>
+  <section class="panel">
+    <div class="label">દરેક લિંકમાં તમારું ID છે કે નહીં</div>
+    <div class="rows" id="rows"></div>
+  </section>
+  <section class="panel">
+    <div class="label">કમિશન તમારા ખાતામાં કેવી રીતે આવે</div>
+    <ol class="steps">
+      <li>ગ્રાહક આ સાઇટ પરના બટનથી Amazon / Flipkart / બીજી સાઇટ પર જાય છે. લિંકમાં તમારું affiliate ID હોય છે.</li>
+      <li>પ્લેટફોર્મ એ ગ્રાહકની ખરીદી તમારા ID સાથે નોંધે છે (cookie દ્વારા, થોડા સમય માટે).</li>
+      <li>ઓર્ડર ડિલિવર થાય અને રિટર્ન સમય પૂરો થાય પછી કમિશન તમારા affiliate ડેશબોર્ડમાં "confirmed" થાય છે.</li>
+      <li>પ્લેટફોર્મ તેના નિયમ પ્રમાણે (સામાન્ય રીતે મહિને એક વાર, ઓછામાં ઓછી રકમ થયા પછી) તમારા બેંક ખાતામાં પૈસા મોકલે છે. બેંક ખાતું અને PAN affiliate એકાઉન્ટમાં ઉમેરવા જરૂરી છે.</li>
+    </ol>
+  </section>
+</main>
+<script src="config.js"></script>
+<script>
+  const C = window.IS_CONFIG || {};
+  const enc = encodeURIComponent, q = "wireless earbuds";
+  const wrap = (u) => (C.linkTemplate ? C.linkTemplate.replace("{url}", enc(u)) : u);
+  const esc = (s) => String(s ?? "").replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
+  const rows = [
+    { name: "Amazon.in", ok: /^[\w.-]+-21$/.test(C.amazonTag || ""), val: C.amazonTag, key: "amazonTag",
+      how: "affiliate-program.amazon.in → Account → Tracking ID (જેમ કે yourname-21)",
+      link: `https://www.amazon.in/s?k=${enc(q)}${C.amazonTag ? `&tag=${enc(C.amazonTag)}` : ""}` },
+    { name: "Flipkart", ok: Boolean(C.flipkartAffid), val: C.flipkartAffid, key: "flipkartAffid",
+      how: "affiliate.flipkart.com → Profile → Affiliate ID",
+      link: `https://www.flipkart.com/search?q=${enc(q)}${C.flipkartAffid ? `&affid=${enc(C.flipkartAffid)}` : ""}` },
+    ...["Croma", "Reliance Digital", "Tata CLiQ", "Myntra", "AJIO", "Nykaa"].map((name) => ({
+      name, ok: Boolean(C.linkTemplate && C.linkTemplate.includes("{url}")), val: C.linkTemplate, key: "linkTemplate",
+      how: "Cuelinks / EarnKaro જેવી affiliate network નું link template ({url} સાથે)",
+      link: wrap({ "Croma": "https://www.croma.com/", "Reliance Digital": "https://www.reliancedigital.in/", "Tata CLiQ": "https://www.tatacliq.com/", "Myntra": "https://www.myntra.com/", "AJIO": "https://www.ajio.com/", "Nykaa": "https://www.nykaa.com/" }[name])
+    }))
+  ];
+  const good = rows.filter((r) => r.ok).length;
+  document.getElementById("summary").innerHTML = `
+    <b>${good} / ${rows.length}</b>
+    <span>${good === rows.length ? "બધી લિંકમાં તમારું ID છે. ખરીદી પર કમિશન તમને મળશે." : "જે લિંક લાલ છે ત્યાંથી થતી ખરીદી પર <strong>કમિશન તમને નહીં મળે</strong>. <code class=\"mono\">public/config.js</code> માં ID ભરો."}</span>`;
+  document.getElementById("rows").innerHTML = rows.map((r) => `
+    <div class="row">
+      <div><h3>${esc(r.name)}</h3><p>${r.ok ? `<code>${esc(r.key)}</code> = <code>${esc(r.val)}</code>` : `ક્યાંથી મળે: ${esc(r.how)}<br>ભરવાનું: <code>${esc(r.key)}</code>`}</p></div>
+      <span class="status ${r.ok ? "ok" : "bad"}">${r.ok ? "✓ કમિશન મળશે" : "✗ ID નથી"}</span>
+      <div class="links"><a class="btn btn-quiet" href="${esc(r.link)}" target="_blank" rel="noopener">ટેસ્ટ લિંક ખોલો ↗</a></div>
+    </div>`).join("");
+</script>
+</body>
+</html>
