@@ -103,3 +103,14 @@ src/config/platforms.js    Platforms, trust, facilities (EN + GU)
 public/                    Website
 test/                      Tests (npm test)
 ```
+
+## SEO and Google
+
+- The main address is **https://digitalworldspace.github.io/intelligent-seller/** (the root `index.html`).
+- After changing `public/products.js` or `public/index.html`, run `npm run seo`. It writes the product list and structured data into the page (so Google sees products without running JavaScript), rebuilds the root `index.html`, `sitemap.xml` and `robots.txt`.
+- **Add the site to Google** (needs your Google account):
+  1. Open https://search.google.com/search-console and add a **URL prefix** property: `https://digitalworldspace.github.io/intelligent-seller/`.
+  2. Choose **HTML tag** verification, copy the `<meta name="google-site-verification" ...>` tag, and put it in `public/index.html` in place of `<!--SEO-VERIFY-->`. Run `npm run seo`, push, then click **Verify**.
+  3. In **Sitemaps**, submit `sitemap.xml`.
+  4. In **URL inspection**, enter the main address and click **Request indexing**.
+- Ranking takes weeks and is decided by Google. A custom domain (e.g. intelligentseller.in), regular new products, and links from your social pages help most.
