@@ -114,3 +114,4 @@ test/                      Tests (npm test)
   3. In **Sitemaps**, submit `sitemap.xml`.
   4. In **URL inspection**, enter the main address and click **Request indexing**.
 - Ranking takes weeks and is decided by Google. A custom domain (e.g. intelligentseller.in), regular new products, and links from your social pages help most.
+- **Landing pages:** `scripts/seo-pages.mjs` defines one page per category (palazzo/trousers, maxi dress, co-ord set, makeup pouch) in English, Hindi and Gujarati, at `/deals/<slug>/`, `/hi/deals/<slug>/` and `/gu/deals/<slug>/`. Each has its own title, description, products, FAQ (FAQPage data), breadcrumbs and hreflang links. Add a category there when you add new kinds of products, then run `npm run seo`.
