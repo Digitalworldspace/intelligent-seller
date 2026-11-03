@@ -59,7 +59,7 @@ const ICON = {
 };
 
 // ---------- Trusted platforms (used when the server isn't connected) ----------
-const FASHION = /\b(shirt|t-?shirt|jeans|kurta|kurti|saree|sari|dress|top|shoes?|sneakers?|sandals?|chappal|jacket|hoodie|trousers?|lehenga|bag|handbag)\b/i;
+const FASHION = /\b(shirt|t-?shirt|jeans|kurta|kurti|saree|sari|dress|top|shoes?|sneakers?|sandals?|chappal|jacket|hoodie|trousers?|pants?|palazzo|gown|co-?ord|lehenga|bag|handbag)\b/i;
 const BEAUTY = /\b(lipstick|makeup|skincare|serum|cream|moisturi[sz]er|sunscreen|shampoo|conditioner|perfume|kajal|foundation|face ?wash|hair oil)\b/i;
 const wrap = (url) => (CFG.linkTemplate ? CFG.linkTemplate.replace("{url}", enc(url)) : url);
 const SITES = [
@@ -88,7 +88,7 @@ function withAffiliate(url, platform) {
       if (u.hostname !== "dl.flipkart.com") { u.hostname = "dl.flipkart.com"; if (!u.pathname.startsWith("/dl/") && u.pathname !== "/dl") u.pathname = "/dl" + u.pathname; }
       if (CFG.flipkartAffid && !u.searchParams.get("affid")) u.searchParams.set("affid", CFG.flipkartAffid);
     }
-    const own = /amazon\.|amzn\.|flipkart\.|fkrt\./.test(u.hostname);
+    const own = /(^|\.)(amazon\.[a-z.]+|amzn\.to|link\.amazon|a\.co|flipkart\.com|fkrt\.it|fkrt\.cc)$/.test(u.hostname);
     return own ? u.toString() : wrap(u.toString());
   } catch { return url; }
 }
@@ -103,7 +103,7 @@ const FEATURED = (Array.isArray(window.IS_PRODUCTS) ? window.IS_PRODUCTS : [])
     return {
       id: "own:" + i, featured: true, title: String(p.title), platformName: site ? site.name : String(p.platform || ""),
       url: withAffiliate(String(p.url)), image: p.image || "", price, mrp: mrp && price && mrp > price ? mrp : null,
-      rating: num(p.rating), ratingCount: num(p.ratingCount), ratingType: "product", score: null,
+      rating: num(p.rating), ratingCount: num(p.ratingCount), ratingType: "product", score: null, free: p.free === true,
       keywords: String(p.keywords || ""), line: String(p.line || ""), benefits: Array.isArray(p.benefits) ? p.benefits.map(String) : []
     };
   });
@@ -204,9 +204,9 @@ function dealsPanel(list) {
         <h3>${esc(p.title)}</h3>
         <div class="meta">${ratingText(p)}<span>${esc(p.platformName)}</span></div>
         ${p.line ? `<p class="deal-line">${esc(p.line)}</p>` : ""}
-        <div class="price-row">${p.price ? `<span class="price num">₹${inr(p.price)}</span>${p.mrp ? `<span class="mrp num">₹${inr(p.mrp)}</span>` : ""}` : ""}</div>
+        <div class="price-row">${p.free ? `<span class="price free">${esc(t("free"))}</span>` : p.price ? `<span class="price num">₹${inr(p.price)}</span>${p.mrp ? `<span class="mrp num">₹${inr(p.mrp)}</span>` : ""}` : ""}</div>
         ${CB.enabled ? `<div class="cash-note">${ICON.gift}${esc(fmt(t("cbChip"), drawVars()))}</div>` : ""}
-        <a class="btn btn-primary btn-block" href="${esc(safeUrl(p.url))}" target="_blank" rel="sponsored nofollow noopener">${esc(p.price ? fmt(t("buyOn"), { p: p.platformName }) : t("seePrice"))} ${ICON.out}</a>
+        <a class="btn btn-primary btn-block" href="${esc(safeUrl(p.url))}" target="_blank" rel="sponsored nofollow noopener">${esc(p.price || p.free ? fmt(t("buyOn"), { p: p.platformName }) : t("seePrice"))} ${ICON.out}</a>
       </article>`).join("")}</div>
     <p class="aff">${esc(t("aff"))}</p></section>`;
 }
@@ -245,7 +245,7 @@ function pickPanel(b, data) {
         <h2>${esc(b.title)}</h2>
         <div class="meta">${ratingText(b)}<span>${esc(b.platformName)}</span></div>
         ${data.seller.bestLine ? `<p class="bestline">${esc(data.seller.bestLine)}</p>` : ""}
-        <div class="price-row">${b.price ? `<span class="price num">₹${inr(b.price)}</span>` : ""}${b.mrp && b.price ? `<span class="mrp num">₹${inr(b.mrp)}</span><span class="off num">${pc}% ${esc(t("off"))}</span>` : ""}</div>
+        <div class="price-row">${b.free ? `<span class="price free">${esc(t("free"))}</span>` : ""}${b.price ? `<span class="price num">₹${inr(b.price)}</span>` : ""}${b.mrp && b.price ? `<span class="mrp num">₹${inr(b.mrp)}</span><span class="off num">${pc}% ${esc(t("off"))}</span>` : ""}</div>
         ${cbEligible(b.price || 0) ? `<div class="cash-note">${ICON.gift}${esc(fmt(t("cbChip"), drawVars()))}</div>` : ""}
       </div>
     </div>
