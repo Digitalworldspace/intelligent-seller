@@ -27,7 +27,11 @@ services:
         sync: false
       - key: ADMIN_KEY
         generateValue: true
-      - key: CASHBACK_TIERS
-        value: '[{"min":999,"amount":50},{"min":4999,"amount":200},{"min":14999,"amount":500},{"min":24999,"amount":1000}]'
+      - key: DRAW_PRIZE
+        value: "1000"
+      - key: DRAW_WINNERS_PER_MONTH
+        value: "1"
+      - key: DRAW_MIN_ORDER
+        value: "0"
       - key: ALLOWED_ORIGINS
         value: https://digitalworldspace.github.io

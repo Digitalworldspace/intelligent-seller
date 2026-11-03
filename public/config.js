@@ -6,24 +6,23 @@ window.IS_CONFIG = {
   apiBase: "",
 
   // Affiliate ids used in the trusted-site links. These are visible in links anyway, so they are not secrets.
-  amazonTag: "",          // e.g. "styleoflife08-21"
+  amazonTag: "styleoflife08-21",   // Amazon Associates tracking ID
   flipkartAffid: "",      // your Flipkart affiliate id
   // Affiliate network link template for the other stores. {url} is replaced by the page address.
   // e.g. "https://linksredirect.com/?cid=YOUR_ID&source=linkkit&url={url}"
   linkTemplate: "",
 
-  // Cashback paid by you to the customer: guaranteed on every eligible order, "up to ₹1,000".
-  // Bigger order, bigger cashback. Each slab: orders of `min` ₹ or more get `amount` ₹.
-  // Keep each amount below the affiliate commission you expect on an order of that size,
-  // so cashback never costs more than you earn. Keep CASHBACK_TIERS on the server the same.
-  cashback: {
+  // Monthly lucky draw: only the winner gets the prize.
+  // Every verified order placed through this site is one entry. On the last day of each month
+  // you pick the winner(s) at random (see README: "Run the monthly draw") and pay them by UPI.
+  luckyDraw: {
     enabled: true,
-    tiers: [
-      { min: 999, amount: 50 },
-      { min: 4999, amount: 200 },
-      { min: 14999, amount: 500 },
-      { min: 24999, amount: 1000 }
-    ]
+    prize: 1000,          // ₹ for each winner
+    winnersPerMonth: 1,
+    minOrder: 0,          // minimum order amount in ₹ to enter (0 = any order)
+    // Shown on the site when no server is connected. Add each winner after the draw, newest first.
+    // Use first name + initial only, e.g. { month: "2026-11", name: "Priya S.", city: "Surat" }
+    winners: []
   },
 
   // Where customers send cashback claims when the server isn't connected.

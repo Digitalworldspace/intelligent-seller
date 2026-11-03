@@ -19,10 +19,21 @@ The customer only searches. The Intelligent Seller looks up products on India's 
 
 - **Chat style, mobile first**: the seller greets the customer, the search box is pinned at the bottom like a messaging app, and the best pick, its benefits, other options and trusted sites appear inside the conversation.
 - **10 languages**: English, हिन्दी, ગુજરાતી, मराठी, বাংলা, தமிழ், తెలుగు, ಕನ್ನಡ, മലയാളം, ਪੰਜਾਬੀ. The site picks the phone's language automatically; customers can change it from the top bar. All text lives in `public/i18n.js`. Please have a native speaker review each language before launch.
-- **Up to ₹1,000 cashback on every order**, paid by you. Every customer who buys through your link gets it, in slabs: bigger order, bigger cashback (default ₹999+ → ₹50, ₹4,999+ → ₹200, ₹14,999+ → ₹500, ₹24,999+ → ₹1,000). Set the slabs in `public/config.js` (`cashback.tiers`) and `CASHBACK_TIERS` on the server. Keep each slab below the commission you expect for that order size. Customers claim it with their order ID and UPI ID.
-  - With the server running, claims are saved to `data/claims.jsonl`. Download them with `curl -H "x-admin-key: YOUR_ADMIN_KEY" https://your-server/api/cashback/claims`.
-  - On GitHub Pages only (no server), customers see the details to send you; add your WhatsApp number or email under `contact` in `public/config.js`.
-  - Check each claim against your affiliate dashboard before paying.
+- **Monthly ₹1,000 lucky draw: only the winner gets the prize.** Every verified order placed through the site is one entry. On the last day of each month one winner is picked at random and paid by UPI. Set it in `public/config.js` (`luckyDraw`) and `DRAW_*` on the server.
+  - Lucky draws tied to a purchase can fall under lottery and promotion laws in India, which differ by state. Have the draw rules checked by a CA or lawyer before launch.
+
+### Run the monthly draw (with the server)
+
+All owner calls need the header `x-admin-key: YOUR_ADMIN_KEY`.
+
+1. **See entries**: `GET /api/cashback/claims`
+2. **Verify** each entry against your Amazon/Flipkart affiliate dashboard (order exists, not returned):
+   `POST /api/draw/verify` with `{"ids":["<entry id>", ...], "status":"verified"}` (or `"rejected"`)
+3. **Run the draw** on the last day of the month: `POST /api/draw/run` with `{"month":"2026-11"}`.
+   The winner is picked at random from that month's verified entries, saved to `data/winners.json`, and shown on the site as first name + initial.
+4. **Pay** the winner on the UPI ID in the result, within 7 days.
+
+Without the server (GitHub Pages only), entries reach you on WhatsApp/email (`contact` in `public/config.js`). Pick the winner yourself and add them to `luckyDraw.winners` in `public/config.js`, e.g. `{ month: "2026-11", name: "Priya S.", city: "Surat" }`.
 
 ## Where the data comes from
 

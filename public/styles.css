@@ -175,6 +175,13 @@ table.cmp{width:100%;border-collapse:collapse;font-size:14.5px;min-width:640px}
 .tiers .r{text-align:right}
 .tiers b{color:var(--cash)}
 .sec .tiers th,.sec .tiers td{border-color:var(--line)}
+.draw-date{display:flex;align-items:center;gap:8px;font-weight:600;color:var(--cash)!important}
+.winners-box{margin-top:14px;border-top:1px solid var(--cash-line);padding-top:12px}
+.sec .winners-box{border-color:var(--line)}
+.winners{list-style:none;margin:0;padding:0;display:grid;gap:8px}
+.winners li{display:grid;grid-template-columns:auto minmax(0,1fr) auto;gap:8px;align-items:center;font-size:14.5px}
+.winners .w-ic{color:var(--cash)}
+.winners .num{font-size:13px;color:var(--muted)}
 .cash-actions{display:flex;gap:8px;flex-wrap:wrap;margin-top:12px}
 .trust-list{list-style:none;margin:0;padding:0;display:grid;gap:12px}
 .trust-list li{display:flex;gap:10px;align-items:flex-start}

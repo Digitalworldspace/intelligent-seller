@@ -48,7 +48,8 @@ app.get("/api/health", (_req, res) => {
     providers: Object.fromEntries(PROVIDERS.map((p) => [p.key, p.ready(env)])),
     ai: Boolean(env.ANTHROPIC_API_KEY),
     affiliate: { amazonTag: Boolean(env.AMAZON_PARTNER_TAG), flipkartId: Boolean(env.FLIPKART_AFFILIATE_ID), otherStores: Boolean(env.AFFILIATE_LINK_TEMPLATE) },
-    claims: true
+    claims: true,
+    draw: { prize: DRAW.prize, winnersPerMonth: DRAW.perMonth }
   });
 });
 
@@ -99,25 +100,40 @@ app.get("/api/search", async (req, res) => {
   res.json(payload);
 });
 
-// ---------- Cashback claims ----------
+// ---------- Monthly lucky draw ----------
+// Customers send their order as an entry. You verify entries against your affiliate dashboard,
+// then run the draw at month end. Only the winner(s) get the prize.
 const recent = new TtlCache(60 * 60 * 1000, 5000);
-// Cashback slabs, same as public/config.js. Override with CASHBACK_TIERS, e.g. [{"min":999,"amount":50}, ...]
-const DEFAULT_TIERS = [{ min: 999, amount: 50 }, { min: 4999, amount: 200 }, { min: 14999, amount: 500 }, { min: 24999, amount: 1000 }];
-const TIERS = (() => {
-  try { const v = JSON.parse(env.CASHBACK_TIERS || "null"); if (Array.isArray(v) && v.length) return v.map((x) => ({ min: Number(x.min) || 0, amount: Number(x.amount) || 0 })).sort((a, b) => a.min - b.min); }
-  catch { console.warn("CASHBACK_TIERS is not valid JSON; using the default slabs."); }
-  return DEFAULT_TIERS;
-})();
-const cashbackFor = (orderAmount) => { let a = 0; for (const x of TIERS) if (orderAmount >= x.min) a = x.amount; return a; };
 const clean = (v, max) => String(v ?? "").replace(/[\u0000-\u001f]/g, " ").trim().slice(0, max);
+const WINNERS_FILE = path.join(DATA_DIR, "winners.json");
+const DRAW = {
+  prize: Number(env.DRAW_PRIZE) || 1000,
+  perMonth: Math.max(1, Number(env.DRAW_WINNERS_PER_MONTH) || 1),
+  minOrder: Number(env.DRAW_MIN_ORDER) || 0
+};
 
+const readEntries = () => { try { return fs.readFileSync(CLAIMS_FILE, "utf8").split("\n").filter(Boolean).map((l) => JSON.parse(l)); } catch { return []; } };
+const writeEntries = (rows) => { fs.mkdirSync(DATA_DIR, { recursive: true }); fs.writeFileSync(CLAIMS_FILE, rows.map((r) => JSON.stringify(r)).join("\n") + (rows.length ? "\n" : "")); };
+const readWinners = () => { try { return JSON.parse(fs.readFileSync(WINNERS_FILE, "utf8")); } catch { return []; } };
+const writeWinners = (rows) => { fs.mkdirSync(DATA_DIR, { recursive: true }); fs.writeFileSync(WINNERS_FILE, JSON.stringify(rows, null, 2)); };
+// Public name: first name + first letter of the last name, e.g. "Priya S."
+const publicName = (name) => { const p = String(name).trim().split(/\s+/); return p.length > 1 ? `${p[0]} ${p[p.length - 1][0]}.` : p[0]; };
+const monthOf = (iso) => new Date(new Date(iso).getTime() + 5.5 * 3600 * 1000).toISOString().slice(0, 7); // month in India time
+
+function isAdmin(req) {
+  const key = env.ADMIN_KEY;
+  const given = String(req.headers["x-admin-key"] || "");
+  return Boolean(key) && given.length === key.length && crypto.timingSafeEqual(Buffer.from(given), Buffer.from(key));
+}
+
+// A customer enters the draw with an order placed through the site.
 app.post("/api/cashback", express.json({ limit: "4kb" }), (req, res) => {
   const ipKey = crypto.createHash("sha256").update(String(req.ip)).digest("hex").slice(0, 16);
   const count = recent.get(ipKey) || 0;
-  if (count >= 5) return res.status(429).json({ error: "Too many claims from this device. Please try again later." });
+  if (count >= 5) return res.status(429).json({ error: "Too many entries from this device. Please try again later." });
 
   const b = req.body || {};
-  const claim = {
+  const entry = {
     id: crypto.randomUUID(),
     at: new Date().toISOString(),
     orderId: clean(b.orderId, 60),
@@ -128,33 +144,58 @@ app.post("/api/cashback", express.json({ limit: "4kb" }), (req, res) => {
     lang: isLang(b.lang) ? b.lang : "en",
     status: "pending"
   };
-  if (!claim.orderId || !claim.platform || !claim.name || !claim.payTo || claim.amount <= 0) {
+  if (!entry.orderId || !entry.platform || !entry.name || !entry.payTo || entry.amount <= 0) {
     return res.status(400).json({ error: "Please fill in every field." });
   }
-  claim.cashback = cashbackFor(claim.amount);
-  if (!claim.cashback) return res.status(400).json({ error: `Cashback starts from orders of ₹${TIERS[0]?.min ?? 0}.` });
-
-  try {
-    fs.mkdirSync(DATA_DIR, { recursive: true });
-    fs.appendFileSync(CLAIMS_FILE, JSON.stringify(claim) + "\n");
-  } catch (e) {
-    console.error("Could not save claim:", e.message);
-    return res.status(500).json({ error: "Could not save your claim. Please try again." });
+  if (DRAW.minOrder && entry.amount < DRAW.minOrder) return res.status(400).json({ error: `Orders of ₹${DRAW.minOrder} or more can enter the draw.` });
+  const rows = readEntries();
+  if (rows.some((r) => r.orderId.toLowerCase() === entry.orderId.toLowerCase() && r.platform === entry.platform)) {
+    return res.status(409).json({ error: "This order is already in the draw." });
   }
+  try { rows.push(entry); writeEntries(rows); }
+  catch (e) { console.error("Could not save entry:", e.message); return res.status(500).json({ error: "Could not save your entry. Please try again." }); }
   recent.set(ipKey, count + 1);
-  res.json({ ok: true, id: claim.id });
+  res.json({ ok: true, id: entry.id });
 });
 
-// Download all claims (for you, the owner). Call with header: x-admin-key: <ADMIN_KEY>
+// Public list of winners (first name + initial only).
+app.get("/api/winners", (_req, res) => {
+  res.json({ prize: DRAW.prize, winners: readWinners().map((w) => ({ month: w.month, name: w.publicName, city: w.city || "" })) });
+});
+
+// ----- Owner only (header x-admin-key: ADMIN_KEY) -----
 app.get("/api/cashback/claims", (req, res) => {
-  const key = env.ADMIN_KEY;
-  const given = String(req.headers["x-admin-key"] || "");
-  if (!key || given.length !== key.length || !crypto.timingSafeEqual(Buffer.from(given), Buffer.from(key))) {
-    return res.status(401).json({ error: "Not allowed." });
-  }
-  let rows = [];
-  try { rows = fs.readFileSync(CLAIMS_FILE, "utf8").split("\n").filter(Boolean).map((l) => JSON.parse(l)); } catch { /* no claims yet */ }
-  res.json({ count: rows.length, claims: rows });
+  if (!isAdmin(req)) return res.status(401).json({ error: "Not allowed." });
+  const rows = readEntries();
+  res.json({ count: rows.length, entries: rows, winners: readWinners() });
+});
+
+// Mark entries after checking them in your affiliate dashboard: { "ids": [...], "status": "verified" | "rejected" }
+app.post("/api/draw/verify", express.json({ limit: "64kb" }), (req, res) => {
+  if (!isAdmin(req)) return res.status(401).json({ error: "Not allowed." });
+  const ids = new Set(Array.isArray(req.body?.ids) ? req.body.ids : []);
+  const status = req.body?.status === "rejected" ? "rejected" : "verified";
+  const rows = readEntries();
+  let changed = 0;
+  for (const r of rows) if (ids.has(r.id)) { r.status = status; changed++; }
+  writeEntries(rows);
+  res.json({ ok: true, changed });
+});
+
+// Pick the month's winner(s) at random from verified entries: { "month": "2026-11" }
+app.post("/api/draw/run", express.json({ limit: "4kb" }), (req, res) => {
+  if (!isAdmin(req)) return res.status(401).json({ error: "Not allowed." });
+  const month = /^\d{4}-\d{2}$/.test(req.body?.month || "") ? req.body.month : monthOf(new Date().toISOString());
+  const winners = readWinners();
+  if (winners.some((w) => w.month === month)) return res.status(409).json({ error: `The draw for ${month} has already been run.`, winners: winners.filter((w) => w.month === month) });
+  const pool = readEntries().filter((r) => r.status === "verified" && monthOf(r.at) === month);
+  if (!pool.length) return res.status(400).json({ error: `No verified entries for ${month}. Verify entries first.` });
+  const picked = [];
+  const left = [...pool];
+  while (picked.length < DRAW.perMonth && left.length) picked.push(left.splice(crypto.randomInt(left.length), 1)[0]);
+  const rows = picked.map((e) => ({ month, entryId: e.id, publicName: publicName(e.name), name: e.name, payTo: e.payTo, orderId: e.orderId, platform: e.platform, prize: DRAW.prize, city: clean(req.body?.city, 40), drawnAt: new Date().toISOString(), entries: pool.length }));
+  writeWinners([...rows, ...winners]);
+  res.json({ ok: true, month, entries: pool.length, winners: rows });
 });
 
 const port = Number(env.PORT) || 3000;
@@ -162,5 +203,5 @@ app.listen(port, () => {
   console.log(`Intelligent Seller running on http://localhost:${port}`);
   for (const p of PROVIDERS) console.log(`  ${PLATFORMS[p.key].name}: ${p.ready(env) ? "connected" : "not configured (search links only)"}`);
   console.log(`  AI seller: ${env.ANTHROPIC_API_KEY ? "on" : "off (using built-in rules)"}`);
-  console.log(`  Cashback claims saved to: ${CLAIMS_FILE}`);
+  console.log(`  Lucky draw entries saved to: ${CLAIMS_FILE}`);
 });

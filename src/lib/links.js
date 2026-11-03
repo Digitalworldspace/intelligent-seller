@@ -17,7 +17,15 @@ export function ensureAffiliate(url, platformKey, env) {
   try {
     const u = new URL(url);
     if (platformKey === "amazon" && env.AMAZON_PARTNER_TAG && !u.searchParams.get("tag")) u.searchParams.set("tag", env.AMAZON_PARTNER_TAG);
-    if (platformKey === "flipkart" && env.FLIPKART_AFFILIATE_ID && !u.searchParams.get("affid")) u.searchParams.set("affid", env.FLIPKART_AFFILIATE_ID);
+    if (platformKey === "flipkart") {
+      // Flipkart only tracks orders placed in its mobile apps through deeplinks:
+      // dl.flipkart.com with /dl in front of the path. Normal www links count website orders only.
+      if (/(^|\.)flipkart\.com$/.test(u.hostname) && u.hostname !== "dl.flipkart.com") {
+        u.hostname = "dl.flipkart.com";
+        if (!u.pathname.startsWith("/dl/") && u.pathname !== "/dl") u.pathname = "/dl" + u.pathname;
+      }
+      if (env.FLIPKART_AFFILIATE_ID && !u.searchParams.get("affid")) u.searchParams.set("affid", env.FLIPKART_AFFILIATE_ID);
+    }
     return u.toString();
   } catch {
     return url;

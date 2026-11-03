@@ -41,5 +41,7 @@ test("product links always carry your affiliate ids", () => {
   const env = { AMAZON_PARTNER_TAG: "me-21", FLIPKART_AFFILIATE_ID: "myid" };
   assert.match(ensureAffiliate("https://www.amazon.in/dp/B0X", "amazon", env), /tag=me-21/);
   assert.equal(ensureAffiliate("https://www.amazon.in/dp/B0X?tag=other-21", "amazon", env), "https://www.amazon.in/dp/B0X?tag=other-21");
-  assert.match(ensureAffiliate("https://www.flipkart.com/p/x", "flipkart", env), /affid=myid/);
+  const fk = ensureAffiliate("https://www.flipkart.com/nike-shoes/p/itm123?pid=SHO1", "flipkart", env);
+  assert.equal(fk, "https://dl.flipkart.com/dl/nike-shoes/p/itm123?pid=SHO1&affid=myid", "Flipkart links become app-tracking deeplinks");
+  assert.equal(ensureAffiliate("https://dl.flipkart.com/dl/x?affid=myid", "flipkart", env), "https://dl.flipkart.com/dl/x?affid=myid");
 });

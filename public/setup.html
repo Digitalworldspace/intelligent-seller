@@ -53,8 +53,8 @@
       how: "affiliate-program.amazon.in → Account → Tracking ID (જેમ કે yourname-21)",
       link: `https://www.amazon.in/s?k=${enc(q)}${C.amazonTag ? `&tag=${enc(C.amazonTag)}` : ""}` },
     { name: "Flipkart", ok: Boolean(C.flipkartAffid), val: C.flipkartAffid, key: "flipkartAffid",
-      how: "affiliate.flipkart.com → Profile → Affiliate ID",
-      link: `https://www.flipkart.com/search?q=${enc(q)}${C.flipkartAffid ? `&affid=${enc(C.flipkartAffid)}` : ""}` },
+      how: "affiliate.flipkart.com → Profile → Affiliate ID (લિંક dl.flipkart.com/dl/ વાળી છે, એટલે એપની ખરીદી પણ ગણાશે)",
+      link: `https://dl.flipkart.com/dl/search?q=${enc(q)}${C.flipkartAffid ? `&affid=${enc(C.flipkartAffid)}` : ""}` },
     ...["Croma", "Reliance Digital", "Tata CLiQ", "Myntra", "AJIO", "Nykaa"].map((name) => ({
       name, ok: Boolean(C.linkTemplate && C.linkTemplate.includes("{url}")), val: C.linkTemplate, key: "linkTemplate",
       how: "Cuelinks / EarnKaro જેવી affiliate network નું link template ({url} સાથે)",

@@ -19,7 +19,7 @@ export const PLATFORMS = {
   flipkart: {
     name: "Flipkart",
     trust: 4.6,
-    search: (q, env) => `https://www.flipkart.com/search?q=${enc(q)}${env.FLIPKART_AFFILIATE_ID ? `&affid=${enc(env.FLIPKART_AFFILIATE_ID)}` : ""}`,
+    search: (q, env) => `https://dl.flipkart.com/dl/search?q=${enc(q)}${env.FLIPKART_AFFILIATE_ID ? `&affid=${enc(env.FLIPKART_AFFILIATE_ID)}` : ""}`,
     ownAffiliate: true,
     facilities: ["wideDelivery", "easyReturns", "cod", "bankEmi"]
   },
