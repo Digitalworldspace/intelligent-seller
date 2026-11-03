@@ -33,6 +33,10 @@
     <div class="rows" id="rows"></div>
   </section>
   <section class="panel">
+    <div class="label">ક્લેમ ઇમેઇલ અને તમારા પ્રોડક્ટ</div>
+    <div class="rows" id="more"></div>
+  </section>
+  <section class="panel">
     <div class="label">કમિશન તમારા ખાતામાં કેવી રીતે આવે</div>
     <ol class="steps">
       <li>ગ્રાહક આ સાઇટ પરના બટનથી Amazon / Flipkart / બીજી સાઇટ પર જાય છે. લિંકમાં તમારું affiliate ID હોય છે.</li>
@@ -43,6 +47,7 @@
   </section>
 </main>
 <script src="config.js"></script>
+<script src="products.js"></script>
 <script>
   const C = window.IS_CONFIG || {};
   const enc = encodeURIComponent, q = "wireless earbuds";
@@ -71,6 +76,16 @@
       <span class="status ${r.ok ? "ok" : "bad"}">${r.ok ? "✓ કમિશન મળશે" : "✗ ID નથી"}</span>
       <div class="links"><a class="btn btn-quiet" href="${esc(r.link)}" target="_blank" rel="noopener">ટેસ્ટ લિંક ખોલો ↗</a></div>
     </div>`).join("");
+  const P = Array.isArray(window.IS_PRODUCTS) ? window.IS_PRODUCTS.filter((p) => p && p.url && p.title) : [];
+  document.getElementById("more").innerHTML = `
+    <div class="row">
+      <div><h3>ક્લેમ ઇમેઇલ</h3><p>${C.notifyEmail ? `દરેક ક્લેમ <code>${esc(C.notifyEmail)}</code> પર આવશે. પહેલા ક્લેમ વખતે FormSubmit તરફથી "Activate Form" મેઇલ આવશે, તેમાં એક વાર Activate દબાવો. Spam ફોલ્ડર પણ જોજો.` : "<code>notifyEmail</code> ખાલી છે, ક્લેમ ઇમેઇલ પર નહીં આવે."}</p></div>
+      <span class="status ${C.notifyEmail ? "ok" : "bad"}">${C.notifyEmail ? "✓ ચાલુ" : "✗ બંધ"}</span>
+    </div>
+    <div class="row">
+      <div><h3>તમારા પ્રોડક્ટ (products.js)</h3><p>${P.length ? `${P.length} પ્રોડક્ટ ડેશબોર્ડ પર "આજના બેસ્ટ ડીલ્સ" માં સૌથી ઉપર દેખાય છે.` : "હજુ કોઈ પ્રોડક્ટ નથી. <code>public/products.js</code> માં affiliate લિંક સાથે ઉમેરો."}</p></div>
+      <span class="status ${P.length ? "ok" : "bad"}">${P.length ? `✓ ${P.length}` : "✗ 0"}</span>
+    </div>`;
 </script>
 </body>
 </html>

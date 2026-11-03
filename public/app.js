@@ -34,6 +34,11 @@ const amt = () => inr(CB.prize);
 const cbEligible = (price) => CB.enabled && price >= MIN_ORDER;
 const drawVars = () => ({ amt: amt(), n: CB.winnersPerMonth, min: inr(MIN_ORDER) });
 // The draw happens on the last day of the current month.
+function daysLeft() {
+  const now = new Date();
+  const end = new Date(now.getFullYear(), now.getMonth() + 1, 0);
+  return Math.max(0, Math.round((end - new Date(now.getFullYear(), now.getMonth(), now.getDate())) / 86400000));
+}
 function nextDrawDate() {
   const now = new Date();
   const d = new Date(now.getFullYear(), now.getMonth() + 1, 0);
@@ -71,6 +76,53 @@ const SITES = [
   { name: "Nykaa", cat: "beauty", fac: ["beauty", "authentic"], url: (q) => `https://www.nykaa.com/search/result/?q=${enc(q)}`, home: () => "https://www.nykaa.com/" }
 ];
 const facText = (keys) => keys.map((k) => t("fac")[k]).filter(Boolean);
+const siteFac = (name) => facText(SITES.find((x) => x.name === name)?.fac || []);
+
+// Your Amazon tag / Flipkart id on every link, and Flipkart app-tracking deeplinks.
+function withAffiliate(url, platform) {
+  try {
+    const u = new URL(url);
+    if (/(^|\.)amazon\.in$/.test(u.hostname) && CFG.amazonTag && !u.searchParams.get("tag")) u.searchParams.set("tag", CFG.amazonTag);
+    if (/(^|\.)flipkart\.com$/.test(u.hostname)) {
+      if (u.hostname !== "dl.flipkart.com") { u.hostname = "dl.flipkart.com"; if (!u.pathname.startsWith("/dl/") && u.pathname !== "/dl") u.pathname = "/dl" + u.pathname; }
+      if (CFG.flipkartAffid && !u.searchParams.get("affid")) u.searchParams.set("affid", CFG.flipkartAffid);
+    }
+    const own = /amazon\.|amzn\.|flipkart\.|fkrt\./.test(u.hostname);
+    return own ? u.toString() : wrap(u.toString());
+  } catch { return url; }
+}
+const num = (v) => { const n = Number(String(v ?? "").replace(/[^\d.]/g, "")); return n > 0 ? n : null; };
+
+// Products you add in public/products.js, shown first.
+const FEATURED = (Array.isArray(window.IS_PRODUCTS) ? window.IS_PRODUCTS : [])
+  .filter((p) => p && p.url && p.title)
+  .map((p, i) => {
+    const price = num(p.price), mrp = num(p.mrp);
+    const site = SITES.find((x) => x.name.toLowerCase() === String(p.platform || "").toLowerCase());
+    return {
+      id: "own:" + i, featured: true, title: String(p.title), platformName: site ? site.name : String(p.platform || ""),
+      url: withAffiliate(String(p.url)), image: p.image || "", price, mrp: mrp && price && mrp > price ? mrp : null,
+      rating: num(p.rating), ratingCount: num(p.ratingCount), ratingType: "product", score: null,
+      keywords: String(p.keywords || ""), line: String(p.line || ""), benefits: Array.isArray(p.benefits) ? p.benefits.map(String) : []
+    };
+  });
+const tokens = (s) => String(s).toLowerCase().split(/[^a-z0-9\u0900-\u0DFF]+/).filter((x) => x.length > 1);
+function matchFeatured(q) {
+  const qt = tokens(q);
+  return FEATURED.map((p) => {
+    const hay = (p.title + " " + p.keywords).toLowerCase();
+    return { p, hit: qt.filter((x) => hay.includes(x)).length };
+  }).filter((x) => x.hit > 0).sort((a, b) => b.hit - a.hit).map((x) => x.p);
+}
+function ownAdvantages(p) {
+  const out = [];
+  if (p.rating != null) out.push(fmt(t("rating"), { r: p.rating, n: inr(p.ratingCount || 0) }));
+  if (p.mrp && p.price) out.push(fmt(t("save"), { s: inr(p.mrp - p.price), pc: Math.round((1 - p.price / p.mrp) * 100) }));
+  p.benefits.slice(0, 5).forEach((b) => out.push(b));
+  if (p.platformName) out.push(fmt(t("sold"), { p: p.platformName }));
+  return out;
+}
+const pctOff = (p) => (p.mrp && p.price ? Math.round((1 - p.price / p.mrp) * 100) : 0);
 function sitesFor(q) {
   return SITES
     .filter((s) => (q ? !s.cat || (s.cat === "fashion" && FASHION.test(q)) || (s.cat === "beauty" && BEAUTY.test(q)) : !s.cat))
@@ -122,16 +174,40 @@ function winnersList() {
 
 function cashPanel() {
   if (!CB.enabled) return "";
+  const v = drawVars();
+  const lines = [
+    [ICON.gift, fmt(t("daysLeft"), { d: daysLeft() })],
+    [ICON.star, fmt(t("winnerEvery"), v)],
+    [ICON.check, t("freeEntry")],
+    [ICON.scale, fmt(t("yearPrize"), { y: inr(CB.prize * CB.winnersPerMonth * 12) })]
+  ];
   return `<section class="panel cash-panel">
     <div class="label">${esc(t("kCash"))}</div>
-    <div class="cash-amt num">₹${amt()}</div>
-    <h3>${esc(fmt(t("cbTitle"), drawVars()))}</h3>
-    <p>${esc(fmt(t("cbSub"), drawVars()))}</p>
+    <div class="cash-hero"><span class="cash-amt num">₹${amt()}</span><span class="cash-word">${esc(t("cashWord"))}</span></div>
+    <h3>${esc(fmt(t("cbTitle"), v))}</h3>
+    <ul class="cash-lines">${lines.map(([ic, txt]) => `<li>${ic}<b>${esc(txt)}</b></li>`).join("")}</ul>
+    <p>${esc(fmt(t("cbSub"), v))}</p>
     <p class="draw-date">${ICON.gift}${esc(fmt(t("nextDraw"), { d: nextDrawDate() }))}</p>
-    ${MIN_ORDER ? `<p class="min">${esc(fmt(t("fMinErr"), drawVars()))}</p>` : ""}
+    ${MIN_ORDER ? `<p class="min">${esc(fmt(t("fMinErr"), v))}</p>` : ""}
     ${winnersList()}
     <div class="cash-actions"><button type="button" class="btn btn-cash" data-act="claim">${esc(t("cbClaim"))}</button><button type="button" class="btn btn-outline" data-act="terms">${esc(t("cbHow"))}</button></div>
   </section>`;
+}
+
+function dealsPanel(list) {
+  if (!list.length) return "";
+  return `<section class="panel"><div class="label">${esc(t("dealsT"))}</div><p class="deals-sub">${esc(t("dealsSub"))}</p>
+    <div class="deals">${list.map((p) => `
+      <article class="deal">
+        <a class="deal-img" href="${esc(safeUrl(p.url))}" target="_blank" rel="sponsored nofollow noopener">${p.image ? `<img src="${esc(safeUrl(p.image))}" alt="" loading="lazy">` : ""}${pctOff(p) ? `<span class="deal-off num">${pctOff(p)}% ${esc(t("off"))}</span>` : ""}</a>
+        <h3>${esc(p.title)}</h3>
+        <div class="meta">${ratingText(p)}<span>${esc(p.platformName)}</span></div>
+        ${p.line ? `<p class="deal-line">${esc(p.line)}</p>` : ""}
+        <div class="price-row">${p.price ? `<span class="price num">₹${inr(p.price)}</span>${p.mrp ? `<span class="mrp num">₹${inr(p.mrp)}</span>` : ""}` : ""}</div>
+        ${CB.enabled ? `<div class="cash-note">${ICON.gift}${esc(fmt(t("cbChip"), drawVars()))}</div>` : ""}
+        <a class="btn btn-primary btn-block" href="${esc(safeUrl(p.url))}" target="_blank" rel="sponsored nofollow noopener">${esc(p.price ? fmt(t("buyOn"), { p: p.platformName }) : t("seePrice"))} ${ICON.out}</a>
+      </article>`).join("")}</div>
+    <p class="aff">${esc(t("aff"))}</p></section>`;
 }
 
 function trustPanel() {
@@ -164,12 +240,12 @@ function pickPanel(b, data) {
     <div class="pick-top">
       <div class="thumb">${b.image ? `<img src="${esc(safeUrl(b.image))}" alt="" loading="lazy">` : ""}</div>
       <div style="min-width:0">
-        <span class="pill pill-best">${ICON.star}${esc(t("bestPick"))} · ${esc(t("score"))} ${b.score}/100</span>
+        <span class="pill pill-best">${ICON.star}${esc(b.featured ? t("ourPick") : t("bestPick"))}${b.score != null ? ` · ${esc(t("score"))} ${b.score}/100` : ""}</span>
         <h2>${esc(b.title)}</h2>
         <div class="meta">${ratingText(b)}<span>${esc(b.platformName)}</span></div>
         ${data.seller.bestLine ? `<p class="bestline">${esc(data.seller.bestLine)}</p>` : ""}
-        <div class="price-row"><span class="price num">₹${inr(b.price)}</span>${b.mrp ? `<span class="mrp num">₹${inr(b.mrp)}</span><span class="off num">${pc}% ${esc(t("off"))}</span>` : ""}</div>
-        ${cbEligible(b.price) ? `<div class="cash-note">${ICON.gift}${esc(fmt(t("cbChip"), drawVars()))}</div>` : ""}
+        <div class="price-row">${b.price ? `<span class="price num">₹${inr(b.price)}</span>` : ""}${b.mrp && b.price ? `<span class="mrp num">₹${inr(b.mrp)}</span><span class="off num">${pc}% ${esc(t("off"))}</span>` : ""}</div>
+        ${cbEligible(b.price || 0) ? `<div class="cash-note">${ICON.gift}${esc(fmt(t("cbChip"), drawVars()))}</div>` : ""}
       </div>
     </div>
     <div class="pick-section">
@@ -183,7 +259,7 @@ function pickPanel(b, data) {
       </div>
       <p class="aff">${esc(t("aff"))}</p>
     </div>
-    ${parts.length ? `<div class="pick-section"><div class="label">${esc(t("scoreTitle"))}</div><div class="scores">${parts.map((s) => `
+    ${parts.length && b.parts ? `<div class="pick-section"><div class="label">${esc(t("scoreTitle"))}</div><div class="scores">${parts.map((s) => `
       <div class="srow"><span>${esc(s.label)}</span><div class="track"><i style="width:${Math.round((b.parts[s.key] / s.max) * 100)}%"></i></div><span class="num">${b.parts[s.key]}/${s.max}</span></div>`).join("")}</div></div>` : ""}
   </article>`;
 }
@@ -196,9 +272,9 @@ function comparePanel(best, others) {
       <td><div class="p-cell">${p.image ? `<img src="${esc(safeUrl(p.image))}" alt="" loading="lazy">` : '<span class="ph"></span>'}<span class="p-name">${esc(p.title)}</span></div></td>
       <td data-l="${esc(t("cPlatform"))}">${esc(p.platformName)}</td>
       <td data-l="${esc(t("cRating"))}">${p.rating != null ? `<span class="stars num">${p.rating}★</span>` : "—"}</td>
-      <td class="r num" data-l="${esc(t("cPrice"))}"><b>₹${inr(p.price)}</b></td>
-      <td class="r num save" data-l="${esc(t("cSave"))}">${p.mrp ? `₹${inr(p.mrp - p.price)}` : "—"}</td>
-      <td class="r num" data-l="${esc(t("cScore"))}">${p.score}</td>
+      <td class="r num" data-l="${esc(t("cPrice"))}"><b>${p.price ? `₹${inr(p.price)}` : "—"}</b></td>
+      <td class="r num save" data-l="${esc(t("cSave"))}">${p.mrp && p.price ? `₹${inr(p.mrp - p.price)}` : "—"}</td>
+      <td class="r num" data-l="${esc(t("cScore"))}">${p.score != null ? p.score : (p.featured ? "★" : "—")}</td>
       <td class="r go"><a class="view" href="${esc(safeUrl(p.url))}" target="_blank" rel="sponsored nofollow noopener">${esc(t("view"))} →</a></td>
     </tr>`).join("")}</tbody></table></div></section>`;
 }
@@ -212,7 +288,7 @@ function facPanel(b) {
 function setBuybar(b) {
   const bar = $("buybar");
   if (!b) { bar.hidden = true; document.body.classList.remove("has-buybar"); return; }
-  bar.innerHTML = `<div><b class="num">₹${inr(b.price)}</b>${cbEligible(b.price) ? `<span>${esc(fmt(t("cbChip"), drawVars()))}</span>` : ""}</div>
+  bar.innerHTML = `<div>${b.price ? `<b class="num">₹${inr(b.price)}</b>` : ""}${cbEligible(b.price || 0) ? `<span>${esc(fmt(t("cbChip"), drawVars()))}</span>` : ""}</div>
     <a class="btn btn-primary" href="${esc(safeUrl(b.url))}" target="_blank" rel="sponsored nofollow noopener">${esc(fmt(t("buyOn"), { p: b.platformName }))}</a>`;
   bar.hidden = false;
   document.body.classList.add("has-buybar");
@@ -222,9 +298,9 @@ function setBuybar(b) {
 function renderWelcome() {
   const sites = sitesFor("");
   $("results").innerHTML = `
-    ${kpis([[t("kPlatforms"), String(sites.length)], CB.enabled && [t("kCash"), `₹${amt()}`, "cash"]])}
+    ${kpis([FEATURED.length && [t("dealsT"), String(FEATURED.length)], [t("kPlatforms"), String(sites.length)], CB.enabled && [t("kCash"), `₹${amt()}`, "cash"], CB.enabled && [t("kDays"), String(daysLeft()), "cash"]])}
     <div class="grid" style="margin-top:18px">
-      <div class="col">${platformsPanel(sites)}</div>
+      <div class="col">${dealsPanel(FEATURED)}${platformsPanel(sites)}</div>
       <aside class="col">${advicePanel(t("greet"))}${cashPanel()}${trustPanel()}</aside>
     </div>`;
   setBuybar(null);
@@ -235,8 +311,9 @@ function renderResult(data) {
   const msgs = [...data.seller.message];
   if (data.errors?.length) msgs.push(fmt(t("partial"), { list: data.errors.join(", ") }));
   const all = b ? [b, ...(data.others || [])] : [];
-  const minPrice = all.length ? Math.min(...all.map((p) => p.price)) : null;
-  const maxSave = all.reduce((m, p) => Math.max(m, p.mrp ? p.mrp - p.price : 0), 0);
+  const prices = all.map((p) => p.price).filter(Boolean);
+  const minPrice = prices.length ? Math.min(...prices) : null;
+  const maxSave = all.reduce((m, p) => Math.max(m, p.mrp && p.price ? p.mrp - p.price : 0), 0);
   const platformCount = b ? new Set(all.map((p) => p.platformName)).size : data.sites.length;
   const when = data.live ? new Date(data.checkedAt).toLocaleString(lang + "-IN", { dateStyle: "medium", timeStyle: "short" }) : "";
 
@@ -246,7 +323,8 @@ function renderResult(data) {
       [t("kPlatforms"), String(platformCount)],
       minPrice && [t("kBest"), `₹${inr(minPrice)}`],
       maxSave > 0 && [t("kSave"), `₹${inr(maxSave)}`, "save"],
-      CB.enabled && [t("kCash"), `₹${amt()}`, "cash"]
+      CB.enabled && [t("kCash"), `₹${amt()}`, "cash"],
+      CB.enabled && [t("kDays"), String(daysLeft()), "cash"]
     ])}
     <div class="grid" style="margin-top:18px">
       <div class="col">
@@ -314,6 +392,19 @@ async function run(q) {
     if (e.name === "AbortError") return;
     data = staticResult(q);
   }
+  const own = matchFeatured(q);
+  if (own.length) {
+    const fromServer = data.best ? [data.best, ...(data.others || [])] : [];
+    const all = [...own, ...fromServer];
+    const top = own[0];
+    data.best = { ...top, facilities: siteFac(top.platformName) };
+    data.others = all.slice(1, 9);
+    data.seller = {
+      message: [fmt(t("intro"), { q, n: all.length, k: new Set(all.map((p) => p.platformName)).size }), fmt(t("pick"), { name: top.title }), t("rest")],
+      bestLine: top.line || (top.mrp ? fmt(t("lineOff"), { pc: pctOff(top) }) : t("lineTop")),
+      advantages: ownAdvantages(top)
+    };
+  }
   renderResult(data);
   $("results").scrollIntoView({ behavior: "smooth", block: "start" });
 }
@@ -360,16 +451,45 @@ async function submitClaim(form) {
   if (MIN_ORDER && amount < MIN_ORDER) return fail(fmt(t("fMinErr"), drawVars()));
   err.hidden = true;
   const claim = { orderId: f.orderId.trim(), platform: f.platform, amount, name: f.name.trim(), payTo: f.payTo.trim(), lang };
+  const btn = form.querySelector('button[type="submit"]');
+  btn.disabled = true; btn.textContent = t("fSending");
 
+  // 1) Email the claim to the owner (works on GitHub Pages, no server needed).
+  let mailed = false;
+  if (CFG.notifyEmail) {
+    try {
+      const res = await fetch(`https://formsubmit.co/ajax/${enc(CFG.notifyEmail)}`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json", Accept: "application/json" },
+        body: JSON.stringify({
+          _subject: `Lucky draw claim: ${claim.platform} order ${claim.orderId} (₹${inr(amount)})`,
+          _template: "table", _captcha: "false",
+          "Order ID": claim.orderId, "Platform": claim.platform, "Order amount": `₹${inr(amount)}`,
+          "Name": claim.name, "UPI ID / phone": claim.payTo, "Language": lang,
+          "Sent at": new Date().toLocaleString("en-IN", { timeZone: "Asia/Kolkata" })
+        }),
+        signal: AbortSignal.timeout(15000)
+      });
+      const j = await res.json().catch(() => ({}));
+      mailed = res.ok && String(j.success) === "true";
+    } catch { mailed = false; }
+  }
+
+  // 2) Also save it on the server, when one is connected.
+  let saved = false;
   await serverReady;
   if (serverOK) {
     try {
       const res = await fetch(`${BASE}/api/cashback`, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(claim) });
       const j = await res.json().catch(() => ({}));
-      if (!res.ok) return fail(j.error || t("error"));
-      form.outerHTML = `<div class="note-ok">${ICON.check}<span>${esc(t("fDone"))}</span></div>`;
-      return;
-    } catch { /* fall through to manual */ }
+      if (!res.ok && res.status !== 409) { btn.disabled = false; btn.textContent = t("fSubmit"); return fail(j.error || t("error")); }
+      saved = true;
+    } catch { saved = false; }
+  }
+
+  if (mailed || saved) {
+    form.outerHTML = `<div class="note-ok">${ICON.check}<span>${esc(t("fDone"))}</span></div>`;
+    return;
   }
   const text = [`${t("fOrder")}: ${claim.orderId}`, `${t("fPlatform")}: ${claim.platform}`, `${t("fAmount")}: ₹${inr(amount)}`, `${t("fName")}: ${claim.name}`, `${t("fPay")}: ${claim.payTo}`].join("\n");
   const where = [CONTACT.whatsapp && `WhatsApp: ${CONTACT.whatsapp}`, CONTACT.email && `Email: ${CONTACT.email}`].filter(Boolean);

@@ -29,6 +29,11 @@ window.IS_CONFIG = {
   // Shown to customers as plain text they can copy.
   contact: {
     whatsapp: "",   // e.g. "+91 98765 43210"
-    email: ""       // e.g. "cashback@yourdomain.in"
-  }
+    email: "styleoflife987@gmail.com"
+  },
+
+  // Every claim is emailed here (through FormSubmit, which needs no server).
+  // The first claim sends an "Activate form" email to this address: open it and click Activate once.
+  // After that you can replace the address with the random alias FormSubmit gives you, to keep it out of the page.
+  notifyEmail: "styleoflife987@gmail.com"
 };
