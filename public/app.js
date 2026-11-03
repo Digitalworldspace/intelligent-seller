@@ -159,10 +159,14 @@ function kpis(items) {
     `<div class="kpi ${cls}"><span>${esc(label)}</span><b class="num">${esc(value)}</b></div>`).join("")}</section>`;
 }
 
-function advicePanel(lines) {
-  return `<section class="panel advice"><div class="who"><div class="mark" aria-hidden="true">IS</div><b>${esc(t("advice"))}</b></div>
-    ${lines.map((l) => `<p>${esc(l)}</p>`).join("")}</section>`;
+// The seller speaks in chat bubbles; the customer's search shows as their own message.
+function sellerSays(lines, extra = "") {
+  return `<div class="say"><div class="av" aria-hidden="true">IS</div><div class="bubble">${lines.map((l) => `<p>${esc(l)}</p>`).join("")}${extra}</div></div>`;
 }
+function customerSays(text) {
+  return `<div class="say me"><div class="bubble">${esc(text)}</div></div>`;
+}
+function advicePanel(lines) { return sellerSays(lines); }
 
 function winnersList() {
   if (!CB.enabled) return "";
@@ -182,7 +186,7 @@ function cashPanel() {
     [ICON.check, t("freeEntry")],
     [ICON.scale, fmt(t("yearPrize"), { y: inr(CB.prize * CB.winnersPerMonth * 12) })]
   ];
-  return `<section class="panel cash-panel">
+  return `<section class="panel cash-panel cash-banner">
     <div class="label">${esc(t("kCash"))}</div>
     <div class="cash-hero"><span class="cash-amt num">₹${amt()}</span><span class="cash-word">${esc(t("cashWord"))}</span></div>
     <h3>${esc(fmt(t("cbTitle"), v))}</h3>
@@ -197,7 +201,7 @@ function cashPanel() {
 
 function dealsPanel(list) {
   if (!list.length) return "";
-  return `<section class="panel"><div class="label">${esc(t("dealsT"))}</div><p class="deals-sub">${esc(t("dealsSub"))}</p>
+  return `<section class="deals-wrap">${sellerSays([t("dealsSay")])}
     <div class="deals">${list.map((p) => `
       <article class="deal">
         <a class="deal-img" href="${esc(safeUrl(p.url))}" target="_blank" rel="sponsored nofollow noopener">${p.image ? `<img src="${esc(safeUrl(p.image))}" alt="" loading="lazy">` : ""}${pctOff(p) ? `<span class="deal-off num">${pctOff(p)}% ${esc(t("off"))}</span>` : ""}</a>
@@ -296,17 +300,17 @@ function setBuybar(b) {
 }
 
 // ---------- Views ----------
+function renderSide() {
+  $("side").innerHTML = `<div class="side-in">${cashPanel()}${trustPanel()}</div>`;
+}
+
 function renderWelcome() {
   const sites = sitesFor("");
-  // All your products come first on the page, above the search.
+  // All your products come first, right under the search.
   $("deals").innerHTML = dealsPanel(FEATURED);
   $("deals").hidden = !FEATURED.length;
-  $("results").innerHTML = `
-    ${kpis([FEATURED.length && [t("dealsT"), String(FEATURED.length)], [t("kPlatforms"), String(sites.length)], CB.enabled && [t("kCash"), `₹${amt()}`, "cash"], CB.enabled && [t("kDays"), String(daysLeft()), "cash"]])}
-    <div class="grid" style="margin-top:18px">
-      <div class="col">${platformsPanel(sites)}</div>
-      <aside class="col">${advicePanel(t("greet"))}${cashPanel()}${trustPanel()}</aside>
-    </div>`;
+  $("results").innerHTML = `${FEATURED.length ? "" : sellerSays(t("greet"))}${platformsPanel(sites)}`;
+  renderSide();
   setBuybar(null);
 }
 
@@ -322,28 +326,25 @@ function renderResult(data) {
   const when = data.live ? new Date(data.checkedAt).toLocaleString(lang + "-IN", { dateStyle: "medium", timeStyle: "short" }) : "";
 
   $("results").innerHTML = `
-    ${INTENT ? `<section class="panel search-tools">${intentBar()}${filterBar()}</section>` : ""}
+    <div class="chat">
+      ${lastQ ? customerSays(lastQ) : ""}
+      ${sellerSays(msgs, INTENT ? intentBar() : "")}
+    </div>
+    ${INTENT ? `<section class="panel search-tools">${filterBar()}</section>` : ""}
     ${kpis([
       b && [t("kCompared"), String(all.length)],
       [t("kPlatforms"), String(platformCount)],
       minPrice && [t("kBest"), `₹${inr(minPrice)}`],
-      maxSave > 0 && [t("kSave"), `₹${inr(maxSave)}`, "save"],
-      CB.enabled && [t("kCash"), `₹${amt()}`, "cash"],
-      CB.enabled && [t("kDays"), String(daysLeft()), "cash"]
+      maxSave > 0 && [t("kSave"), `₹${inr(maxSave)}`, "save"]
     ])}
-    <div class="grid" style="margin-top:18px">
-      <div class="col">
-        ${b ? pickPanel(b, data) + comparePanel(b, data.others || []) : ""}
-        ${b ? platformsPanel(data.sites.map((s) => ({ ...s, facilities: [] }))) : platformsPanel(data.sites)}
-        ${when ? `<p class="stamp">${esc(fmt(t("stamp"), { d: when }))}</p>` : ""}
-      </div>
-      <aside class="col">
-        ${advicePanel(msgs)}
-        ${b ? facPanel(b) : ""}
-        ${cashPanel()}
-        ${trustPanel()}
-      </aside>
+    <div class="col" style="margin-top:18px">
+      ${b ? pickPanel(b, data) : ""}
+      ${b ? facPanel(b) : ""}
+      ${b && data.others?.length ? comparePanel(b, data.others) : ""}
+      ${b ? platformsPanel(data.sites.map((s) => ({ ...s, facilities: [] }))) : platformsPanel(data.sites)}
+      ${when ? `<p class="stamp">${esc(fmt(t("stamp"), { d: when }))}</p>` : ""}
     </div>`;
+  renderSide();
   setBuybar(b);
 }
 

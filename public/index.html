@@ -27,11 +27,12 @@
 </header>
 
 <main class="wrap">
-  <div id="deals"></div>
-
+  <!-- 1. Search, as a conversation with the seller -->
   <section class="search-panel">
-    <h1 id="heroT"></h1>
-    <p id="heroS"></p>
+    <div class="say">
+      <div class="av" aria-hidden="true">IS</div>
+      <div class="bubble"><h1 id="heroT"></h1><p id="heroS"></p></div>
+    </div>
     <form class="bar" id="searchForm" role="search">
       <input id="q" name="q" autocomplete="off" maxlength="100" enterkeyhint="search" aria-label="Search">
       <button type="submit" class="btn btn-primary" id="searchBtn"></button>
@@ -39,7 +40,14 @@
     <div class="chips"><span id="popular"></span><span id="chips"></span></div>
   </section>
 
-  <section id="results" aria-live="polite"></section>
+  <!-- 2. Products and results, with the cashback banner standing at the side -->
+  <div class="layout">
+    <div class="main-col">
+      <div id="deals"></div>
+      <section id="results" aria-live="polite"></section>
+    </div>
+    <aside class="side" id="side"></aside>
+  </div>
 
   <footer class="notes" id="notes"></footer>
 </main>
