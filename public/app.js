@@ -5,6 +5,7 @@
 // cashback and trust information.
 
 import { LANGS, CHIP_QUERIES, t as tr, fmt, isLang } from "./i18n.js";
+import { parseIntent, filteredSearchUrl } from "./intent.js";
 
 const CFG = window.IS_CONFIG || {};
 const CB = { enabled: true, prize: 1000, winnersPerMonth: 1, minOrder: 0, winners: [], ...(CFG.luckyDraw || {}) };
@@ -127,7 +128,7 @@ function sitesFor(q) {
   return SITES
     .filter((s) => (q ? !s.cat || (s.cat === "fashion" && FASHION.test(q)) || (s.cat === "beauty" && BEAUTY.test(q)) : !s.cat))
     .map((s) => {
-      const raw = q ? s.url(q) : s.home();
+      const raw = q ? filteredSearchUrl(s.name, s.url(q), F) : s.home();
       return { name: s.name, url: s.own ? raw : wrap(raw), facilities: facText(s.fac) };
     });
 }
@@ -318,6 +319,7 @@ function renderResult(data) {
   const when = data.live ? new Date(data.checkedAt).toLocaleString(lang + "-IN", { dateStyle: "medium", timeStyle: "short" }) : "";
 
   $("results").innerHTML = `
+    ${INTENT ? `<section class="panel search-tools">${intentBar()}${filterBar()}</section>` : ""}
     ${kpis([
       b && [t("kCompared"), String(all.length)],
       [t("kPlatforms"), String(platformCount)],
@@ -367,45 +369,153 @@ function staticText() {
 // ---------- Search ----------
 let lastQ = "";
 let controller = null;
-function staticResult(q) {
+// What the system understood, the filters, and the raw results (to re-filter without searching again).
+let INTENT = null;
+let F = { min: null, max: null, minRating: 0, platform: "", sort: "rel" };
+let RAW = null;
+
+const budgetText = () => (F.min && F.max ? fmt(t("bBetween"), { a: inr(F.min), b: inr(F.max) })
+  : F.max ? fmt(t("bUnder"), { x: inr(F.max) }) : F.min ? fmt(t("bAbove"), { x: inr(F.min) }) : "");
+const whatText = () => [INTENT.brand, INTENT.product || INTENT.query, ...INTENT.needs.filter((n) => !(INTENT.product || "").includes(n))]
+  .filter(Boolean).join(" ") + (budgetText() ? `, ${budgetText()}` : "");
+
+function anyAdvantages(p) {
+  if (p.featured) return ownAdvantages(p);
+  const out = [];
+  if (p.rating != null) out.push(fmt(t(p.ratingType === "seller" ? "sellerRat" : "rating"), { r: p.rating, n: inr(p.ratingCount || 0) }));
+  if (p.mrp && p.price) out.push(fmt(t("save"), { s: inr(p.mrp - p.price), pc: pctOff(p) }));
+  (p.features || []).slice(0, 3).forEach((f) => out.push(String(f)));
+  if (p.inStock) out.push(t("stock"));
+  if (p.cod) out.push(t("cod"));
+  if (p.platformName) out.push(fmt(t("sold"), { p: p.platformName }));
+  return out;
+}
+
+// Keep only products that are really what was searched (not accessories), before sorting by price.
+function relevant(list) {
+  const words = String(INTENT?.query || "").toLowerCase().split(" ").filter((w) => w.length > 2);
+  if (!words.length) return list;
+  const stem = (w) => w.replace(/(es|s)$/, "");
+  const hits = (p) => { const tt = (p.title + " " + (p.keywords || "")).toLowerCase(); return words.filter((w) => tt.includes(stem(w))).length; };
+  const best = Math.max(0, ...list.map(hits));
+  if (!best) return list;
+  // Accessories ("shoe cleaning kit") match fewer of the searched words than the product itself.
+  return list.filter((p) => hits(p) === best);
+}
+
+function applyFilters(list) {
+  const priced = F.min || F.max;
+  let out = relevant(list).filter((p) => {
+    if (priced && !p.price) return false;
+    if (F.min && p.price < F.min) return false;
+    if (F.max && p.price > F.max) return false;
+    if (F.minRating && !(p.rating >= F.minRating)) return false;
+    if (F.platform && p.platformName !== F.platform) return false;
+    return true;
+  });
+  const byPrice = (dir) => (a, b) => (a.price ? 0 : 1) - (b.price ? 0 : 1) || dir * ((a.price || 0) - (b.price || 0));
+  if (F.sort === "low") out = [...out].sort(byPrice(1));
+  if (F.sort === "high") out = [...out].sort(byPrice(-1));
+  if (F.sort === "off") out = [...out].sort((a, b) => pctOff(b) - pctOff(a));
+  if (F.sort === "rating") out = [...out].sort((a, b) => (b.rating || 0) - (a.rating || 0) || (b.ratingCount || 0) - (a.ratingCount || 0));
+  return out;
+}
+
+// Build the page from the raw results + filters.
+function compose() {
+  const raw = RAW;
+  const q = INTENT.query;
+  const fromServer = raw.best ? [raw.best, ...(raw.others || [])] : [];
+  const own = matchFeatured([q, INTENT.brand, ...INTENT.needs].filter(Boolean).join(" "));
+  const all = [...own, ...fromServer.filter((p) => !own.some((o) => o.url === p.url))];
+  const list = applyFilters(all);
   const sites = sitesFor(q);
-  return { live: false, best: null, others: [], seller: { message: [fmt(t("noLive"), { q, n: sites.length }), t("noLive2")], advantages: [] }, scoreParts: [], sites, errors: [], checkedAt: new Date().toISOString() };
+  const data = { ...raw, sites, others: [], best: null };
+  if (raw.source === "server") data.sites = sites;
+
+  if (list.length) {
+    const top = list[0];
+    data.best = { ...top, facilities: top.facilities?.length ? top.facilities : siteFac(top.platformName) };
+    data.others = list.slice(1, 9);
+    const sameAsServer = raw.best && top.id === raw.best.id;
+    data.seller = sameAsServer
+      ? { ...raw.seller, message: [fmt(t("msgGot"), { what: whatText() }), ...raw.seller.message] }
+      : {
+          message: [fmt(t("msgGot"), { what: whatText() }), fmt(t("pick"), { name: top.title }), t("rest")],
+          bestLine: top.line || (top.mrp ? fmt(t("lineOff"), { pc: pctOff(top) }) : t("lineTop")),
+          advantages: anyAdvantages(top)
+        };
+  } else {
+    const msgs = [fmt(t("msgGot"), { what: whatText() })];
+    if (all.length) msgs.push(t("noMatch"));
+    msgs.push(fmt(t("noLive"), { q, n: sites.length }), t("noLive2"));
+    data.seller = { message: msgs, advantages: [] };
+    data.live = false;
+  }
+  renderResult(data);
+}
+
+function intentBar() {
+  if (!INTENT) return "";
+  const chips = [
+    INTENT.product && [t("iProduct"), INTENT.product],
+    budgetText() && [t("iBudget"), budgetText()],
+    ...INTENT.needs.map((n) => [t("iNeed"), n]),
+    INTENT.brand && [t("iBrand"), INTENT.brand],
+    F.sort === "low" && INTENT.sort === "low" && [t("iCheap"), "✓"]
+  ].filter(Boolean);
+  if (!chips.length) return "";
+  return `<div class="understood"><span class="label">${esc(t("understood"))}</span>${chips.map(([k, v]) => `<span class="u-chip"><span>${esc(k)}</span><b>${esc(v)}</b></span>`).join("")}</div>`;
+}
+
+function filterBar() {
+  const opt = (v, label, cur) => `<option value="${esc(v)}"${String(cur) === String(v) ? " selected" : ""}>${esc(label)}</option>`;
+  return `<form class="filters" id="filters" onsubmit="return false">
+    <div class="label">${esc(t("fltTitle"))}</div>
+    <div class="f-row">
+      <label class="f-field"><span>${esc(t("fMin"))}</span><input id="f-min" inputmode="numeric" maxlength="7" value="${F.min || ""}" placeholder="0"></label>
+      <label class="f-field"><span>${esc(t("fMax"))}</span><input id="f-max" inputmode="numeric" maxlength="7" value="${F.max || ""}" placeholder="∞"></label>
+      <label class="f-field"><span>${esc(t("fRating"))}</span><select id="f-rating">${opt(0, t("fAny"), F.minRating)}${opt(3, "3★+", F.minRating)}${opt(4, "4★+", F.minRating)}${opt(4.5, "4.5★+", F.minRating)}</select></label>
+      <label class="f-field"><span>${esc(t("fPlat"))}</span><select id="f-plat">${opt("", t("fAllPlat"), F.platform)}${SITES.map((x) => opt(x.name, x.name, F.platform)).join("")}</select></label>
+      <label class="f-field"><span>${esc(t("fSort"))}</span><select id="f-sort">${opt("rel", t("sRel"), F.sort)}${opt("low", t("sLow"), F.sort)}${opt("high", t("sHigh"), F.sort)}${opt("off", t("sOff"), F.sort)}${opt("rating", t("sRate"), F.sort)}</select></label>
+      <button type="button" class="btn btn-quiet f-clear" data-act="fclear">${esc(t("fClear"))}</button>
+    </div>
+  </form>`;
+}
+
+function readFilters() {
+  const n = (id) => { const v = Number(String($(id)?.value || "").replace(/[^\d]/g, "")); return v > 0 ? v : null; };
+  F = { min: n("f-min"), max: n("f-max"), minRating: Number($("f-rating")?.value) || 0, platform: $("f-plat")?.value || "", sort: $("f-sort")?.value || "rel" };
+  if (F.min && F.max && F.min > F.max) [F.min, F.max] = [F.max, F.min];
+}
+
+function staticResult(q) {
+  return { live: false, best: null, others: [], seller: { message: [], advantages: [] }, scoreParts: [], sites: [], errors: [], checkedAt: new Date().toISOString() };
 }
 
 async function run(q) {
   lastQ = q;
   $("q").value = q;
   const url = new URL(location.href); url.searchParams.set("q", q); history.replaceState(null, "", url);
-  $("results").innerHTML = `<div class="panel loading"><span class="spinner"></span><span>${esc(fmt(t("intro").split(".")[0] + ".", { q, n: "…", k: "…" }))}</span></div>`;
+  INTENT = parseIntent(q);
+  F = { min: INTENT.min, max: INTENT.max, minRating: 0, platform: "", sort: INTENT.sort || "rel" };
+  $("results").innerHTML = `<div class="panel loading"><span class="spinner"></span><span>${esc(fmt(t("msgGot"), { what: whatText() }).split(".")[0])}…</span></div>`;
   controller?.abort();
   controller = new AbortController();
   let data;
   try {
     await serverReady;
     if (!serverOK) throw new Error("no server");
-    const res = await fetch(`${BASE}/api/search?q=${enc(q)}&lang=${lang}`, { signal: controller.signal });
+    const res = await fetch(`${BASE}/api/search?q=${enc(INTENT.query)}&lang=${lang}`, { signal: controller.signal });
     if (!res.ok) throw new Error(String(res.status));
     data = await res.json();
-    // The server only knows facilities for live products; add them for the site cards.
-    data.sites = data.sites.map((s) => ({ ...s, facilities: facText(SITES.find((x) => x.name === s.name)?.fac || []) }));
+    data.source = "server";
   } catch (e) {
     if (e.name === "AbortError") return;
     data = staticResult(q);
   }
-  const own = matchFeatured(q);
-  if (own.length) {
-    const fromServer = data.best ? [data.best, ...(data.others || [])] : [];
-    const all = [...own, ...fromServer];
-    const top = own[0];
-    data.best = { ...top, facilities: siteFac(top.platformName) };
-    data.others = all.slice(1, 9);
-    data.seller = {
-      message: [fmt(t("intro"), { q, n: all.length, k: new Set(all.map((p) => p.platformName)).size }), fmt(t("pick"), { name: top.title }), t("rest")],
-      bestLine: top.line || (top.mrp ? fmt(t("lineOff"), { pc: pctOff(top) }) : t("lineTop")),
-      advantages: ownAdvantages(top)
-    };
-  }
-  renderResult(data);
+  RAW = data;
+  compose();
   $("results").scrollIntoView({ behavior: "smooth", block: "start" });
 }
 
@@ -525,7 +635,10 @@ document.addEventListener("click", (e) => {
   else if (act === "terms") openTerms();
   else if (act === "close") closeSheet();
   else if (act === "copy") copyClaim(a);
+  else if (act === "fclear") { F = { min: null, max: null, minRating: 0, platform: "", sort: "rel" }; compose(); }
 });
+document.addEventListener("change", (e) => { if (e.target.closest("#filters") && RAW) { readFilters(); compose(); } });
+document.addEventListener("keydown", (e) => { if (e.key === "Enter" && e.target.closest("#filters") && RAW) { e.preventDefault(); readFilters(); compose(); } });
 document.addEventListener("submit", (e) => { if (e.target.id === "claimForm") { e.preventDefault(); submitClaim(e.target); } });
 sheet.addEventListener("click", (e) => { if (e.target === sheet) closeSheet(); });
 

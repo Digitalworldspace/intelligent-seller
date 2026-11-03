@@ -69,6 +69,21 @@ body::before{content:"";position:fixed;inset:0 0 auto;height:env(safe-area-inset
 .chips button{border:1px solid var(--line);background:var(--surface);border-radius:999px;padding:4px 12px;font-size:14px;color:var(--fg)}
 .chips button:hover{border-color:var(--primary)}
 
+/* ---------- Understood + filters ---------- */
+.search-tools{display:flex;flex-direction:column;gap:14px;margin-bottom:18px}
+.understood{display:flex;flex-wrap:wrap;gap:8px;align-items:center}
+.understood .label{margin:0 4px 0 0}
+.u-chip{display:inline-flex;align-items:center;gap:6px;background:var(--primary-soft);border-radius:999px;padding:4px 12px;font-size:14px}
+.u-chip span{color:var(--muted);font-size:12.5px}
+.u-chip b{color:var(--fg)}
+.filters .label{margin-bottom:8px}
+.f-row{display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:10px;align-items:end}
+.f-field{display:flex;flex-direction:column;gap:4px;font-size:13px;color:var(--muted);min-width:0}
+.f-field input,.f-field select{border:1px solid var(--line-strong);background:var(--bg);color:var(--fg);border-radius:10px;padding:9px 10px;font-size:15px;min-width:0;width:100%}
+.f-field input:focus,.f-field select:focus{outline:none;border-color:var(--primary)}
+.f-clear{min-height:42px}
+@media (max-width:520px){.f-row{grid-template-columns:repeat(2,minmax(0,1fr))}}
+
 /* ---------- Summary numbers ---------- */
 .kpis{display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:12px}
 .kpi{background:var(--surface);border:1px solid var(--line);border-radius:var(--radius);padding:14px 16px;min-width:0}
