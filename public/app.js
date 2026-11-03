@@ -342,8 +342,18 @@ function renderNotes() {
     <div class="panel"><h3>${esc(t("respT"))}</h3><p>${esc(t("resp1"))}</p><p>${esc(t("resp2"))}</p></div>`;
 }
 
+// Fonts for other scripts load only when that language is picked (keeps the page fast).
+const SCRIPT_FONT = { bn: "Noto+Sans+Bengali", ta: "Noto+Sans+Tamil", te: "Noto+Sans+Telugu", kn: "Noto+Sans+Kannada", ml: "Noto+Sans+Malayalam", pa: "Noto+Sans+Gurmukhi" };
+function loadFont(l) {
+  const f = SCRIPT_FONT[l];
+  if (!f || document.getElementById("font-" + l)) return;
+  const link = Object.assign(document.createElement("link"), { id: "font-" + l, rel: "stylesheet", href: `https://fonts.googleapis.com/css2?family=${f}:wght@400;600;700&display=swap` });
+  document.head.appendChild(link);
+}
+
 function staticText() {
   document.documentElement.lang = lang;
+  loadFont(lang);
   $("tag").textContent = t("tag");
   $("langLabel").textContent = t("lang");
   $("lang").innerHTML = LANGS.map((l) => `<option value="${l.code}"${l.code === lang ? " selected" : ""}>${esc(l.name)}</option>`).join("");

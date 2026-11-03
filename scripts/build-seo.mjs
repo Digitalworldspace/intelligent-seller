@@ -4,13 +4,16 @@
 //   - the product list and structured data (JSON-LD) into public/index.html, so Google sees
 //     the products without running JavaScript
 //   - index.html at the repo root: the main page at https://digitalworldspace.github.io/intelligent-seller/
-//   - sitemap.xml and robots.txt at the repo root
+//   - category pages in 10 languages:  /deals/<slug>/, /hi/deals/<slug>/, /gu/deals/<slug>/ …
+//   - a page for every product in English, Hindi and Gujarati: /p/<slug>/, /hi/p/<slug>/, /gu/p/<slug>/
+//   - sitemap.xml (with hreflang), robots.txt and 404.html at the repo root
 
 import fs from "node:fs";
 import path from "node:path";
 import vm from "node:vm";
 import { fileURLToPath } from "node:url";
-import { CATEGORIES, LANG_PAGES } from "./seo-pages.mjs";
+import { CATEGORIES, LANG_PAGES as BASE_LANGS } from "./seo-pages.mjs";
+import { MORE_LANGS, PRODUCT_TPL } from "./seo-langs.mjs";
 
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
 const SITE = "https://digitalworldspace.github.io/intelligent-seller/";
@@ -18,99 +21,125 @@ const BASE = "/intelligent-seller/";
 const PUB = path.join(ROOT, "public");
 
 const esc = (s) => String(s ?? "").replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
+const fill = (t, v) => String(t).replace(/\{(\w+)\}/g, (_, k) => v[k] ?? "");
+const ld = (o) => `<script type="application/ld+json">${JSON.stringify(o).replace(/</g, "\\u003c")}</script>`;
+const write = (rel, html) => { const out = path.join(ROOT, rel); fs.mkdirSync(path.dirname(out), { recursive: true }); fs.writeFileSync(out, html); };
+const slugify = (s) => String(s).toLowerCase().replace(/[®™|:–—]/g, " ").replace(/['’]/g, "").replace(/[^a-z0-9]+/g, "-").replace(/^-+|-+$/g, "").split("-").slice(0, 9).join("-");
 
-// Read products.js the same way the browser does.
+// ---------- Languages ----------
+const LANGS = {
+  en: { ...BASE_LANGS.en, font: "Noto+Sans+Devanagari", label: "English" },
+  hi: { ...BASE_LANGS.hi, font: "Noto+Sans+Devanagari", label: "हिन्दी" },
+  gu: { ...BASE_LANGS.gu, font: "Noto+Sans+Devanagari", label: "ગુજરાતી" },
+  mr: { ...MORE_LANGS.mr.page, label: "मराठी" },
+  bn: { ...MORE_LANGS.bn.page, label: "বাংলা" },
+  ta: { ...MORE_LANGS.ta.page, label: "தமிழ்" },
+  te: { ...MORE_LANGS.te.page, label: "తెలుగు" },
+  kn: { ...MORE_LANGS.kn.page, label: "ಕನ್ನಡ" },
+  ml: { ...MORE_LANGS.ml.page, label: "മലയാളം" },
+  pa: { ...MORE_LANGS.pa.page, label: "ਪੰਜਾਬੀ" }
+};
+const PRODUCT_LANGS = ["en", "hi", "gu"];
+
+// Category text for the 7 template languages.
+for (const cat of CATEGORIES) {
+  for (const [lang, M] of Object.entries(MORE_LANGS)) {
+    const name = M.names[cat.slug];
+    if (!name) continue;
+    cat[lang] = { title: fill(M.title, { name }), desc: fill(M.desc, { name }), h1: name, intro: fill(M.intro, { name }), faq: M.faq.map(([q, a]) => [fill(q, { name }), fill(a, { name })]) };
+  }
+}
+
+// ---------- Products ----------
 const sandbox = { window: {} };
 vm.runInNewContext(fs.readFileSync(path.join(PUB, "products.js"), "utf8"), sandbox);
 const products = (sandbox.window.IS_PRODUCTS || []).filter((p) => p && p.url && p.title);
+const usedSlugs = new Set();
+for (const p of products) {
+  let s = slugify(p.title) || "product";
+  while (usedSlugs.has(s)) s += "-2";
+  usedSlugs.add(s);
+  p.slug = s;
+}
+const matchProducts = (cat) => products.filter((p) => cat.match.some((w) => (p.title + " " + (p.keywords || "")).toLowerCase().includes(w)));
+const catOf = (p) => CATEGORIES.find((c) => matchProducts(c).includes(p));
+const liveCats = CATEGORIES.filter((c) => matchProducts(c).length);
 
-// 1. Static product list (replaced by the live grid when the page's script runs).
-const listHtml = products.length
-  ? `<section class="panel"><h2>Today's best deals on trusted platforms</h2><ul class="seo-list">${products
-      .map((p) => `<li><a href="${esc(p.url)}" rel="sponsored nofollow noopener" target="_blank">${esc(p.title)}</a> – ${esc(p.platform || "")}${p.free ? " – FREE" : ""}</li>`)
-      .join("")}</ul></section>`
-  : "";
+const catUrl = (lang, slug) => `${SITE}${LANGS[lang].dir}deals/${slug}/`;
+const prodUrl = (lang, slug) => `${SITE}${LANGS[lang].dir}p/${slug}/`;
 
-// 2. Structured data: the website (with search box), the organisation and the product list.
-const jsonld = [
-  {
-    "@context": "https://schema.org",
-    "@type": "WebSite",
-    name: "Intelligent Seller",
-    alternateName: ["IntelligentSeller", "Intelligent Seller India"],
-    url: SITE,
-    inLanguage: ["en-IN", "hi-IN", "gu-IN", "mr-IN", "bn-IN", "ta-IN", "te-IN", "kn-IN", "ml-IN", "pa-IN"],
-    description: "Search once and get the best product from Amazon.in, Flipkart and other trusted Indian stores, with a lucky draw to win ₹1,000 cash.",
-    potentialAction: { "@type": "SearchAction", target: { "@type": "EntryPoint", urlTemplate: `${SITE}?q={search_term_string}` }, "query-input": "required name=search_term_string" }
-  },
-  { "@context": "https://schema.org", "@type": "Organization", name: "Intelligent Seller", url: SITE, logo: `${SITE}public/og-icon.png` },
-  products.length && {
-    "@context": "https://schema.org",
-    "@type": "ItemList",
-    name: "Today's best deals",
-    itemListElement: products.map((p, i) => ({ "@type": "ListItem", position: i + 1, name: p.title, url: p.url, ...(p.image ? { image: p.image } : {}) }))
-  }
-].filter(Boolean);
-const jsonldHtml = jsonld.map((o) => `<script type="application/ld+json">${JSON.stringify(o).replace(/</g, "\\u003c")}</script>`).join("\n");
-
-const between = (html, name, inner) => html.replace(new RegExp(`<!--SEO-${name}-START-->[\\s\\S]*?<!--SEO-${name}-END-->`), `<!--SEO-${name}-START-->${inner}<!--SEO-${name}-END-->`);
-
-// ---------- Landing pages (one per category, in en / hi / gu) ----------
-const fill = (t, v) => String(t).replace(/\{(\w+)\}/g, (_, k) => v[k] ?? "");
-const matchProducts = (cat) => products.filter((p) => {
-  const hay = (p.title + " " + (p.keywords || "")).toLowerCase();
-  return cat.match.some((w) => hay.includes(w));
-});
-const pageUrl = (lang, slug) => `${SITE}${LANG_PAGES[lang].dir}deals/${slug}/`;
-const pages = [];
-
-for (const cat of CATEGORIES) {
-  const items = matchProducts(cat);
-  if (!items.length) continue;
-  for (const [lang, L] of Object.entries(LANG_PAGES)) {
-    const T = cat[lang];
-    const url = pageUrl(lang, cat.slug);
-    const alternates = Object.keys(LANG_PAGES).map((l) => `<link rel="alternate" hreflang="${LANG_PAGES[l].htmlLang}" href="${pageUrl(l, cat.slug)}">`).join("\n")
-      + `\n<link rel="alternate" hreflang="x-default" href="${pageUrl("en", cat.slug)}">`;
-    const ld = [
-      { "@context": "https://schema.org", "@type": "BreadcrumbList", itemListElement: [
-        { "@type": "ListItem", position: 1, name: L.home, item: SITE },
-        { "@type": "ListItem", position: 2, name: T.h1, item: url }] },
-      { "@context": "https://schema.org", "@type": "ItemList", name: T.h1, itemListElement: items.map((p, i) => ({ "@type": "ListItem", position: i + 1, name: p.title, url: p.url, ...(p.image ? { image: p.image } : {}) })) },
-      { "@context": "https://schema.org", "@type": "FAQPage", mainEntity: T.faq.map(([q, a]) => ({ "@type": "Question", name: q, acceptedAnswer: { "@type": "Answer", text: a } })) }
-    ].map((o) => `<script type="application/ld+json">${JSON.stringify(o).replace(/</g, "\\u003c")}</script>`).join("\n");
-    const others = CATEGORIES.filter((c) => c.slug !== cat.slug && matchProducts(c).length);
-    const html = `<!doctype html>
-<!-- Generated by scripts/build-seo.mjs. Edit scripts/seo-pages.mjs, then run: npm run seo -->
+// ---------- Shared page parts ----------
+function head({ lang, title, desc, url, image, alternates, jsonld }) {
+  const L = LANGS[lang];
+  const fonts = ["Hind+Vadodara:wght@400;600;700", `${L.font}:wght@400;600;700`].filter((v, i, a) => a.indexOf(v) === i).map((f) => `family=${f}`).join("&");
+  return `<!doctype html>
+<!-- Generated by scripts/build-seo.mjs. Edit scripts/seo-pages.mjs, scripts/seo-langs.mjs or public/products.js, then run: npm run seo -->
 <html lang="${L.htmlLang}">
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<title>${esc(T.title)}</title>
-<meta name="description" content="${esc(T.desc)}">
+<title>${esc(title)}</title>
+<meta name="description" content="${esc(desc)}">
 <meta name="robots" content="index, follow, max-image-preview:large">
 <link rel="canonical" href="${url}">
 ${alternates}
 <meta property="og:type" content="website">
 <meta property="og:site_name" content="Intelligent Seller">
-<meta property="og:title" content="${esc(T.title)}">
-<meta property="og:description" content="${esc(T.desc)}">
+<meta property="og:locale" content="${L.htmlLang.replace("-", "_")}">
+<meta property="og:title" content="${esc(title)}">
+<meta property="og:description" content="${esc(desc)}">
 <meta property="og:url" content="${url}">
-<meta property="og:image" content="${items[0].image || SITE + "public/og-image.png"}">
+<meta property="og:image" content="${esc(image || SITE + "public/og-image.png")}">
 <meta name="twitter:card" content="summary_large_image">
 <meta name="theme-color" content="#1d5a48">
 <link rel="icon" href="${BASE}public/favicon.svg" type="image/svg+xml">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Hind+Vadodara:wght@400;600;700&family=Noto+Sans+Devanagari:wght@400;600;700&display=swap">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?${fonts}&display=swap">
 <link rel="stylesheet" href="${BASE}public/styles.css">
-${ld}
-</head>
-<body>
-<header class="top"><div class="top-in">
+${jsonld}
+</head>`;
+}
+
+function topbar(lang, urlFor) {
+  return `<header class="top"><div class="top-in">
   <a class="brand" href="${BASE}" style="text-decoration:none;color:inherit"><div class="mark" aria-hidden="true">IS</div><div><b>Intelligent Seller</b><small>Your personal shopping expert</small></div></a>
-  <nav class="tools lang-links">${Object.entries(LANG_PAGES).map(([l, x]) => `<a class="btn btn-quiet" href="${pageUrl(l, cat.slug)}" hreflang="${x.htmlLang}"${l === lang ? ' aria-current="page"' : ""}>${{ en: "English", hi: "हिन्दी", gu: "ગુજરાતી" }[l]}</a>`).join("")}</nav>
-</div></header>
+  <div class="tools"><label class="sr" for="lang-nav">Language</label><select id="lang-nav" onchange="location.href=this.value">${Object.keys(urlFor).map((l) =>
+    `<option value="${urlFor[l]}"${l === lang ? " selected" : ""}>${LANGS[l].label}</option>`).join("")}</select></div>
+</div></header>`;
+}
+
+const langFooter = (urlFor) => `<nav class="panel lang-foot" aria-label="Languages">${Object.keys(urlFor).map((l) => `<a href="${urlFor[l]}" hreflang="${LANGS[l].htmlLang}">${LANGS[l].label}</a>`).join(" · ")}</nav>`;
+const hreflangs = (urlFor) => Object.keys(urlFor).map((l) => `<link rel="alternate" hreflang="${LANGS[l].htmlLang}" href="${urlFor[l]}">`).join("\n") + `\n<link rel="alternate" hreflang="x-default" href="${urlFor.en}">`;
+
+const cashAside = (L) => `<aside class="side"><div class="side-in"><section class="panel cash-panel cash-banner">
+  <div class="cash-hero"><span class="cash-amt num">₹1,000</span><span class="cash-word">CASH</span></div>
+  <p>${esc(L.win)}</p>
+  <a class="btn btn-cash btn-block" href="${BASE}">${esc(L.searchMore)}</a>
+</section></div></aside>`;
+
+const sitemapEntries = [];
+
+// ---------- Category pages (10 languages) ----------
+for (const cat of liveCats) {
+  const items = matchProducts(cat);
+  const langs = Object.keys(LANGS).filter((l) => cat[l]);
+  const urlFor = Object.fromEntries(langs.map((l) => [l, catUrl(l, cat.slug)]));
+  for (const lang of langs) {
+    const L = LANGS[lang], T = cat[lang], url = urlFor[lang];
+    const pLang = PRODUCT_LANGS.includes(lang) ? lang : "en";
+    const jsonld = [
+      ld({ "@context": "https://schema.org", "@type": "BreadcrumbList", itemListElement: [
+        { "@type": "ListItem", position: 1, name: L.home, item: SITE },
+        { "@type": "ListItem", position: 2, name: T.h1, item: url }] }),
+      ld({ "@context": "https://schema.org", "@type": "CollectionPage", name: T.h1, description: T.desc, url, inLanguage: L.htmlLang, isPartOf: { "@type": "WebSite", name: "Intelligent Seller", url: SITE } }),
+      ld({ "@context": "https://schema.org", "@type": "ItemList", name: T.h1, itemListElement: items.map((p, i) => ({ "@type": "ListItem", position: i + 1, name: p.title, url: prodUrl(pLang, p.slug), ...(p.image ? { image: p.image } : {}) })) }),
+      ld({ "@context": "https://schema.org", "@type": "FAQPage", mainEntity: T.faq.map(([q, a]) => ({ "@type": "Question", name: q, acceptedAnswer: { "@type": "Answer", text: a } })) })
+    ].join("\n");
+    const others = liveCats.filter((c) => c.slug !== cat.slug && c[lang]);
+    const html = `${head({ lang, title: T.title, desc: T.desc, url, image: items[0].image, alternates: hreflangs(urlFor), jsonld })}
+<body>
+${topbar(lang, urlFor)}
 <main class="wrap">
   <nav class="crumbs"><a href="${BASE}">${esc(L.home)}</a> › <span>${esc(T.h1)}</span></nav>
   <section class="search-panel">
@@ -123,8 +152,8 @@ ${ld}
         <div class="say"><div class="av" aria-hidden="true">IS</div><div class="bubble"><p>${esc(fill(L.picked, { n: items.length }))}. ${esc(L.win)}</p></div></div>
         <div class="deals">${items.map((p) => `
           <article class="deal">
-            <a class="deal-img" href="${esc(p.url)}" target="_blank" rel="sponsored nofollow noopener">${p.image ? `<img src="${esc(p.image)}" alt="${esc(p.title)}" loading="lazy" width="300" height="300">` : ""}</a>
-            <h2 class="deal-h">${esc(p.title)}</h2>
+            <a class="deal-img" href="${prodUrl(pLang, p.slug)}">${p.image ? `<img src="${esc(p.image)}" alt="${esc(p.title)}" loading="lazy" width="300" height="300">` : ""}</a>
+            <h2 class="deal-h"><a href="${prodUrl(pLang, p.slug)}">${esc(p.title)}</a></h2>
             <div class="meta"><span>${esc(p.platform || "")}</span></div>
             ${p.free ? '<div class="price-row"><span class="price free">FREE</span></div>' : ""}
             ${(p.benefits || []).length ? `<ul class="fac">${p.benefits.slice(0, 3).map((b) => `<li>✓ ${esc(b)}</li>`).join("")}</ul>` : ""}
@@ -132,53 +161,134 @@ ${ld}
           </article>`).join("")}</div>
       </section>
       <section class="panel faq"><h2>${esc(L.faqT)}</h2>${T.faq.map(([q, a]) => `<details open><summary>${esc(q)}</summary><p>${esc(a)}</p></details>`).join("")}</section>
-      ${others.length ? `<section class="panel"><h2>${esc(L.related)}</h2><ul class="seo-list">${others.map((c) => `<li><a href="${pageUrl(lang, c.slug)}">${esc(c[lang].h1)}</a></li>`).join("")}</ul></section>` : ""}
+      ${others.length ? `<section class="panel"><h2>${esc(L.related)}</h2><ul class="seo-list">${others.map((c) => `<li><a href="${catUrl(lang, c.slug)}">${esc(c[lang].h1)}</a></li>`).join("")}</ul></section>` : ""}
+      ${langFooter(urlFor)}
       <p class="aff">${esc(L.note)}</p>
     </div>
-    <aside class="side"><div class="side-in"><section class="panel cash-panel cash-banner">
-      <div class="cash-hero"><span class="cash-amt num">₹1,000</span><span class="cash-word">CASH</span></div>
-      <p>${esc(L.win)}</p>
-      <a class="btn btn-cash btn-block" href="${BASE}">${esc(L.searchMore)}</a>
-    </section></div></aside>
+    ${cashAside(L)}
   </div>
 </main>
 </body>
 </html>
 `;
-    const out = path.join(ROOT, L.dir, "deals", cat.slug, "index.html");
-    fs.mkdirSync(path.dirname(out), { recursive: true });
-    fs.writeFileSync(out, html);
-    pages.push({ url, lang, slug: cat.slug, h1: T.h1 });
+    write(`${L.dir}deals/${cat.slug}/index.html`, html);
   }
+  sitemapEntries.push({ urlFor, priority: "0.8" });
 }
 
-// Links from the home page to the English category pages (and their translations).
-const catLinks = pages.length
-  ? `<section class="panel"><h2>Shop by category</h2><ul class="seo-list cat-links">${CATEGORIES.filter((c) => pages.some((p) => p.slug === c.slug)).map((c) =>
-      `<li><a href="${pageUrl("en", c.slug)}">${esc(c.en.h1)}</a> · <a href="${pageUrl("hi", c.slug)}" hreflang="hi-IN">${esc(c.hi.h1)}</a> · <a href="${pageUrl("gu", c.slug)}" hreflang="gu-IN">${esc(c.gu.h1)}</a></li>`).join("")}</ul></section>`
-  : "";
+// ---------- Product pages (English, Hindi, Gujarati) ----------
+for (const p of products) {
+  const cat = catOf(p);
+  const urlFor = Object.fromEntries(PRODUCT_LANGS.map((l) => [l, prodUrl(l, p.slug)]));
+  const features = (p.benefits || []).join(", ") || p.title;
+  const platform = p.platform || "Amazon.in";
+  for (const lang of PRODUCT_LANGS) {
+    const L = LANGS[lang], P = PRODUCT_TPL[lang], url = urlFor[lang];
+    const v = { name: p.title, p: platform, features, cat: cat ? cat[lang].h1 : "" };
+    const shortName = p.title.split("|")[0].trim();
+    const title = fill(P.title, { ...v, name: shortName }).slice(0, 110);
+    const desc = fill(P.desc, v).slice(0, 300);
+    const faq = P.faq.map(([q, a]) => [fill(q, { ...v, name: shortName }), fill(a, v)]);
+    const related = cat ? matchProducts(cat).filter((x) => x !== p).slice(0, 4) : [];
+    const jsonld = [
+      ld({ "@context": "https://schema.org", "@type": "BreadcrumbList", itemListElement: [
+        { "@type": "ListItem", position: 1, name: L.home, item: SITE },
+        ...(cat ? [{ "@type": "ListItem", position: 2, name: cat[lang].h1, item: catUrl(lang, cat.slug) }] : []),
+        { "@type": "ListItem", position: cat ? 3 : 2, name: shortName, item: url }] }),
+      ld({ "@context": "https://schema.org", "@type": "FAQPage", mainEntity: faq.map(([q, a]) => ({ "@type": "Question", name: q, acceptedAnswer: { "@type": "Answer", text: a } })) })
+    ].join("\n");
+    const html = `${head({ lang, title, desc, url, image: p.image, alternates: hreflangs(urlFor), jsonld })}
+<body>
+${topbar(lang, urlFor)}
+<main class="wrap">
+  <nav class="crumbs"><a href="${BASE}">${esc(L.home)}</a>${cat ? ` › <a href="${catUrl(lang, cat.slug)}">${esc(cat[lang].h1)}</a>` : ""} › <span>${esc(shortName)}</span></nav>
+  <div class="layout">
+    <div class="main-col">
+      <article class="panel pick">
+        <div class="pick-top">
+          <div class="thumb">${p.image ? `<img src="${esc(p.image)}" alt="${esc(p.title)}" width="300" height="300">` : ""}</div>
+          <div style="min-width:0">
+            <h1 class="p-h1">${esc(p.title)}</h1>
+            <div class="meta"><span>${esc(platform)}</span></div>
+            ${p.free ? '<div class="price-row"><span class="price free">FREE</span></div>' : ""}
+            <div class="cash-note">🎁 ${esc(L.win)}</div>
+          </div>
+        </div>
+        <div class="pick-section"><h2 class="label">${esc(P.featT)}</h2><ul class="benefits">${(p.benefits || []).map((b) => `<li>✓ <span>${esc(b)}</span></li>`).join("")}</ul></div>
+        <div class="pick-section"><a class="btn btn-primary btn-lg btn-block" href="${esc(p.url)}" target="_blank" rel="sponsored nofollow noopener">${esc(fill(P.buy, v))}</a><p class="aff">${esc(L.note)}</p></div>
+        <div class="pick-section"><h2 class="label">${esc(fill(P.whyT, v))}</h2><ul class="benefits">${P.why.map((w) => `<li>✓ <span>${esc(fill(w, v))}</span></li>`).join("")}</ul></div>
+      </article>
+      <section class="panel faq"><h2>${esc(L.faqT)}</h2>${faq.map(([q, a]) => `<details open><summary>${esc(q)}</summary><p>${esc(a)}</p></details>`).join("")}</section>
+      ${related.length ? `<section class="panel"><h2>${esc(fill(P.catT, v))}</h2><ul class="seo-list">${related.map((x) => `<li><a href="${prodUrl(lang, x.slug)}">${esc(x.title)}</a></li>`).join("")}${cat ? `<li><a href="${catUrl(lang, cat.slug)}">→ ${esc(cat[lang].h1)}</a></li>` : ""}</ul></section>` : ""}
+      ${langFooter(urlFor)}
+    </div>
+    ${cashAside(L)}
+  </div>
+</main>
+</body>
+</html>
+`;
+    write(`${L.dir}p/${p.slug}/index.html`, html);
+  }
+  sitemapEntries.push({ urlFor, priority: "0.7" });
+}
 
+// ---------- Home page: static product list, categories, structured data ----------
+const listHtml = products.length
+  ? `<section class="panel"><h2>Today's best deals on trusted platforms</h2><ul class="seo-list">${products
+      .map((p) => `<li><a href="${prodUrl("en", p.slug)}">${esc(p.title)}</a> – ${esc(p.platform || "")}${p.free ? " – FREE" : ""}</li>`).join("")}</ul></section>`
+  : "";
+const catLinks = liveCats.length
+  ? `<section class="panel"><h2>Shop by category</h2><ul class="seo-list cat-links">${liveCats.map((c) =>
+      `<li><a href="${catUrl("en", c.slug)}">${esc(c.en.h1)}</a> · ${Object.keys(LANGS).filter((l) => l !== "en" && c[l]).map((l) => `<a href="${catUrl(l, c.slug)}" hreflang="${LANGS[l].htmlLang}">${LANGS[l].label}</a>`).join(" · ")}</li>`).join("")}</ul></section>`
+  : "";
+const homeLd = [
+  { "@context": "https://schema.org", "@type": "WebSite", name: "Intelligent Seller", alternateName: ["IntelligentSeller", "Intelligent Seller India"], url: SITE,
+    inLanguage: Object.values(LANGS).map((l) => l.htmlLang),
+    description: "Search once and get the best product from Amazon.in, Flipkart and other trusted Indian stores, with a lucky draw to win ₹1,000 cash.",
+    potentialAction: { "@type": "SearchAction", target: { "@type": "EntryPoint", urlTemplate: `${SITE}?q={search_term_string}` }, "query-input": "required name=search_term_string" } },
+  { "@context": "https://schema.org", "@type": "Organization", name: "Intelligent Seller", url: SITE, logo: `${SITE}public/og-icon.png` },
+  products.length && { "@context": "https://schema.org", "@type": "ItemList", name: "Today's best deals",
+    itemListElement: products.map((p, i) => ({ "@type": "ListItem", position: i + 1, name: p.title, url: prodUrl("en", p.slug), ...(p.image ? { image: p.image } : {}) })) }
+].filter(Boolean).map(ld).join("\n");
+
+const between = (html, name, inner) => html.replace(new RegExp(`<!--SEO-${name}-START-->[\\s\\S]*?<!--SEO-${name}-END-->`), `<!--SEO-${name}-START-->${inner}<!--SEO-${name}-END-->`);
 let page = fs.readFileSync(path.join(PUB, "index.html"), "utf8");
 page = between(page, "PRODUCTS", listHtml);
-page = between(page, "JSONLD", jsonldHtml);
+page = between(page, "JSONLD", homeLd);
 page = between(page, "CATS", catLinks);
 fs.writeFileSync(path.join(PUB, "index.html"), page);
 
-// 3. Root page: same page, with paths pointing into public/.
 const rootPage = page
   .replace(/(href|src)="(?!https?:|#|data:|\/)([^"]+)"/g, (m, attr, p) => `${attr}="public/${p}"`)
   .replace("<!doctype html>", "<!doctype html>\n<!-- Generated by scripts/build-seo.mjs from public/index.html. Edit that file, then run: npm run seo -->");
 fs.writeFileSync(path.join(ROOT, "index.html"), rootPage);
 
-// 4. Sitemap and robots.txt
+// ---------- 404 page ----------
+write("404.html", `${head({ lang: "en", title: "Page not found – Intelligent Seller", desc: "This page doesn't exist. Search the best deals on Intelligent Seller.", url: SITE, alternates: "", jsonld: "" }).replace('content="index, follow, max-image-preview:large"', 'content="noindex"')}
+<body>
+${topbar("en", { en: SITE })}
+<main class="wrap">
+  <section class="search-panel">
+    <div class="say"><div class="av" aria-hidden="true">IS</div><div class="bubble"><h1>This page isn't here</h1><p>Tell me what you want to buy and I'll find the best one.</p></div></div>
+    <form class="bar" action="${BASE}" method="get" role="search"><input name="q" placeholder="Type what you want to buy…" aria-label="Search"><button type="submit" class="btn btn-primary">Search</button></form>
+  </section>
+  ${catLinks}
+</main>
+</body>
+</html>
+`);
+
+// ---------- Sitemap and robots.txt ----------
 const today = new Date().toISOString().slice(0, 10);
-const alt = (slug) => Object.keys(LANG_PAGES).map((l) => `    <xhtml:link rel="alternate" hreflang="${LANG_PAGES[l].htmlLang}" href="${pageUrl(l, slug)}"/>`).join("\n");
+const urlEntry = (loc, urlFor, priority) => `  <url><loc>${loc}</loc><lastmod>${today}</lastmod><priority>${priority}</priority>
+${Object.keys(urlFor).map((l) => `    <xhtml:link rel="alternate" hreflang="${LANGS[l].htmlLang}" href="${urlFor[l]}"/>`).join("\n")}
+    <xhtml:link rel="alternate" hreflang="x-default" href="${urlFor.en}"/>
+  </url>`;
 fs.writeFileSync(path.join(ROOT, "sitemap.xml"), `<?xml version="1.0" encoding="UTF-8"?>
 <urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9" xmlns:xhtml="http://www.w3.org/1999/xhtml">
   <url><loc>${SITE}</loc><lastmod>${today}</lastmod><changefreq>daily</changefreq><priority>1.0</priority></url>
-${pages.map((p) => `  <url><loc>${p.url}</loc><lastmod>${today}</lastmod><changefreq>weekly</changefreq><priority>0.8</priority>
-${alt(p.slug)}
-  </url>`).join("\n")}
+${sitemapEntries.flatMap((e) => Object.values(e.urlFor).map((u) => urlEntry(u, e.urlFor, e.priority))).join("\n")}
 </urlset>
 `);
 fs.writeFileSync(path.join(ROOT, "robots.txt"), `User-agent: *
@@ -188,4 +298,5 @@ Disallow: /intelligent-seller/public/setup.html
 Sitemap: ${SITE}sitemap.xml
 `);
 
-console.log(`SEO built: ${products.length} products, ${pages.length} landing pages, index.html, sitemap.xml, robots.txt`);
+const count = sitemapEntries.reduce((n, e) => n + Object.keys(e.urlFor).length, 0) + 1;
+console.log(`SEO built: ${products.length} products, ${liveCats.length} categories, ${count} pages in sitemap, plus index.html, 404.html, robots.txt`);
