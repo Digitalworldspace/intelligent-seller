@@ -140,10 +140,12 @@ app.post("/api/cashback", express.json({ limit: "4kb" }), (req, res) => {
     platform: clean(b.platform, 40),
     amount: Number(b.amount) || 0,
     name: clean(b.name, 80),
+    email: clean(b.email, 120),
     payTo: clean(b.payTo, 80),
     lang: isLang(b.lang) ? b.lang : "en",
     status: "pending"
   };
+  if (entry.email && !/^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/.test(entry.email)) return res.status(400).json({ error: "Please enter a valid email address." });
   if (!entry.orderId || !entry.platform || !entry.name || !entry.payTo || entry.amount <= 0) {
     return res.status(400).json({ error: "Please fill in every field." });
   }
@@ -195,7 +197,7 @@ app.post("/api/draw/run", express.json({ limit: "4kb" }), (req, res) => {
   const picked = [];
   const left = [...pool];
   while (picked.length < DRAW.perDraw && left.length) picked.push(left.splice(crypto.randomInt(left.length), 1)[0]);
-  const rows = picked.map((e) => ({ drawId, date, entryId: e.id, publicName: publicName(e.name), name: e.name, payTo: e.payTo, orderId: e.orderId, platform: e.platform, prize: DRAW.prize, city: clean(req.body?.city, 40), drawnAt: now.toISOString(), entries: pool.length }));
+  const rows = picked.map((e) => ({ drawId, date, entryId: e.id, publicName: publicName(e.name), name: e.name, email: e.email || "", payTo: e.payTo, orderId: e.orderId, platform: e.platform, prize: DRAW.prize, city: clean(req.body?.city, 40), drawnAt: now.toISOString(), entries: pool.length }));
   // Entries in this draw don't go into the next one.
   const used = new Set(pool.map((e) => e.id));
   writeEntries(entries.map((e) => (used.has(e.id) ? { ...e, drawId } : e)));

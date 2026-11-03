@@ -577,6 +577,7 @@ function openClaim() {
       <div class="field"><label for="c-platform">${esc(t("fPlatform"))}</label><select id="c-platform" name="platform">${SITES.map((s) => `<option>${esc(s.name)}</option>`).join("")}</select></div>
       <div class="field"><label for="c-amount">${esc(t("fAmount"))}</label><input id="c-amount" name="amount" inputmode="numeric" maxlength="9" required></div>
       <div class="field"><label for="c-name">${esc(t("fName"))}</label><input id="c-name" name="name" maxlength="80" autocomplete="name" required></div>
+      <div class="field"><label for="c-email">${esc(t("fEmail"))}</label><input id="c-email" name="email" type="email" inputmode="email" maxlength="120" autocomplete="email" required></div>
       <div class="field"><label for="c-pay">${esc(t("fPay"))}</label><input id="c-pay" name="payTo" maxlength="80" autocomplete="off" required></div>
       <p class="err" id="c-err" hidden></p>
       <button type="submit" class="btn btn-cash btn-block">${esc(t("fSubmit"))}</button>
@@ -589,10 +590,11 @@ async function submitClaim(form) {
   const amount = Number(String(f.amount).replace(/[^\d.]/g, ""));
   const err = $("c-err");
   const fail = (m) => { err.textContent = m; err.hidden = false; };
-  if (!f.orderId.trim() || !f.name.trim() || !f.payTo.trim() || !amount) return fail(t("fErr"));
+  if (!f.orderId.trim() || !f.name.trim() || !f.payTo.trim() || !f.email.trim() || !amount) return fail(t("fErr"));
+  if (!/^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/.test(f.email.trim())) return fail(t("fEmailErr"));
   if (MIN_ORDER && amount < MIN_ORDER) return fail(fmt(t("fMinErr"), drawVars()));
   err.hidden = true;
-  const claim = { orderId: f.orderId.trim(), platform: f.platform, amount, name: f.name.trim(), payTo: f.payTo.trim(), lang };
+  const claim = { orderId: f.orderId.trim(), platform: f.platform, amount, name: f.name.trim(), email: f.email.trim(), payTo: f.payTo.trim(), lang };
   const btn = form.querySelector('button[type="submit"]');
   btn.disabled = true; btn.textContent = t("fSending");
 
@@ -606,8 +608,11 @@ async function submitClaim(form) {
         body: JSON.stringify({
           _subject: `Lucky draw claim: ${claim.platform} order ${claim.orderId} (₹${inr(amount)})`,
           _template: "table", _captcha: "false",
+          // Your reply goes straight to the customer; the customer gets a confirmation email.
+          _replyto: claim.email, email: claim.email,
+          _autoresponse: t("fAuto"),
           "Order ID": claim.orderId, "Platform": claim.platform, "Order amount": `₹${inr(amount)}`,
-          "Name": claim.name, "UPI ID / phone": claim.payTo, "Language": lang,
+          "Name": claim.name, "Customer email": claim.email, "UPI ID / phone": claim.payTo, "Language": lang,
           "Sent at": new Date().toLocaleString("en-IN", { timeZone: "Asia/Kolkata" })
         }),
         signal: AbortSignal.timeout(15000)
@@ -629,16 +634,19 @@ async function submitClaim(form) {
     } catch { saved = false; }
   }
 
+  const text = [`${t("fOrder")}: ${claim.orderId}`, `${t("fPlatform")}: ${claim.platform}`, `${t("fAmount")}: ₹${inr(amount)}`, `${t("fName")}: ${claim.name}`, `${t("fEmail")}: ${claim.email}`, `${t("fPay")}: ${claim.payTo}`].join("\n");
+  // Optional: open the customer's own email app with everything filled in; they only tap Send.
+  const to = CFG.notifyEmail || CONTACT.email;
+  const mailApp = to ? `<a class="btn btn-outline btn-block" href="mailto:${esc(to)}?subject=${enc(`Lucky draw entry: ${claim.platform} ${claim.orderId}`)}&body=${enc(text)}">${ICON.out} ${esc(t("fMailApp"))}</a>` : "";
   if (mailed || saved) {
-    form.outerHTML = `<div class="note-ok">${ICON.check}<span>${esc(t("fDone"))}</span></div>`;
+    form.outerHTML = `<div class="note-ok">${ICON.check}<span>${esc(t("fDone"))}</span></div>${mailApp}`;
     return;
   }
-  const text = [`${t("fOrder")}: ${claim.orderId}`, `${t("fPlatform")}: ${claim.platform}`, `${t("fAmount")}: ₹${inr(amount)}`, `${t("fName")}: ${claim.name}`, `${t("fPay")}: ${claim.payTo}`].join("\n");
   const where = [CONTACT.whatsapp && `WhatsApp: ${CONTACT.whatsapp}`, CONTACT.email && `Email: ${CONTACT.email}`].filter(Boolean);
   form.outerHTML = `<div class="sec"><h3>${esc(t("fManual"))}</h3>
     ${where.length ? `<pre class="copy">${esc(where.join("\n"))}</pre>` : ""}
     <pre class="copy" id="claimText">${esc(text)}</pre>
-    <button type="button" class="btn btn-primary btn-block" data-act="copy">${esc(t("fCopy"))}</button></div>`;
+    <button type="button" class="btn btn-primary btn-block" data-act="copy">${esc(t("fCopy"))}</button>${mailApp}</div>`;
 }
 
 async function copyClaim(btn) {
