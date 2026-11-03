@@ -298,10 +298,13 @@ function setBuybar(b) {
 // ---------- Views ----------
 function renderWelcome() {
   const sites = sitesFor("");
+  // All your products come first on the page, above the search.
+  $("deals").innerHTML = dealsPanel(FEATURED);
+  $("deals").hidden = !FEATURED.length;
   $("results").innerHTML = `
     ${kpis([FEATURED.length && [t("dealsT"), String(FEATURED.length)], [t("kPlatforms"), String(sites.length)], CB.enabled && [t("kCash"), `₹${amt()}`, "cash"], CB.enabled && [t("kDays"), String(daysLeft()), "cash"]])}
     <div class="grid" style="margin-top:18px">
-      <div class="col">${dealsPanel(FEATURED)}${platformsPanel(sites)}</div>
+      <div class="col">${platformsPanel(sites)}</div>
       <aside class="col">${advicePanel(t("greet"))}${cashPanel()}${trustPanel()}</aside>
     </div>`;
   setBuybar(null);
@@ -495,6 +498,7 @@ function staticResult(q) {
 
 async function run(q) {
   lastQ = q;
+  $("deals").hidden = true; // search results show the matching products instead
   $("q").value = q;
   const url = new URL(location.href); url.searchParams.set("q", q); history.replaceState(null, "", url);
   INTENT = parseIntent(q);
@@ -619,7 +623,12 @@ async function copyClaim(btn) {
 }
 
 // ---------- Events ----------
-$("searchForm").addEventListener("submit", (e) => { e.preventDefault(); const q = $("q").value.trim(); if (q) run(q); });
+$("searchForm").addEventListener("submit", (e) => {
+  e.preventDefault();
+  const q = $("q").value.trim();
+  if (q) run(q);
+  else { lastQ = ""; INTENT = null; RAW = null; const u = new URL(location.href); u.searchParams.delete("q"); history.replaceState(null, "", u); renderWelcome(); }
+});
 $("chips").addEventListener("click", (e) => { const b = e.target.closest("button[data-q]"); if (b) run(b.dataset.q); });
 $("lang").addEventListener("change", (e) => {
   lang = e.target.value;

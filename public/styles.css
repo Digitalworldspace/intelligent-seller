@@ -131,6 +131,7 @@ body::before{content:"";position:fixed;inset:0 0 auto;height:env(safe-area-inset
 .track i{display:block;height:100%;background:var(--primary);border-radius:99px}
 
 /* ---------- Featured deals ---------- */
+#deals .deals{grid-template-columns:repeat(auto-fill,minmax(200px,1fr))}
 .deals-sub{margin:-4px 0 12px;color:var(--muted);font-size:14px}
 .deals{display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:12px}
 .deal{border:1px solid var(--line);border-radius:12px;padding:12px;display:flex;flex-direction:column;gap:8px;background:var(--surface);min-width:0}
