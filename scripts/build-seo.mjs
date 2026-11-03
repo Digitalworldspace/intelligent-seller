@@ -40,6 +40,19 @@ const LANGS = {
   pa: { ...MORE_LANGS.pa.page, label: "ਪੰਜਾਬੀ" }
 };
 const PRODUCT_LANGS = ["en", "hi", "gu"];
+// "All deals" hub page text, per language: [title, h1, intro, allProducts]
+const HUB = {
+  en: ["All Deals – Women's Dresses, Palazzos, Co-ord Sets & More | Intelligent Seller", "All deals", "Every category and every product we have picked on trusted platforms, in one place. Each order through our links is an entry to win ₹1,000 cash.", "All products"],
+  hi: ["सभी डील्स – महिलाओं की ड्रेस, पलाज़ो, को-ऑर्ड सेट और भी | Intelligent Seller", "सभी डील्स", "भरोसेमंद प्लेटफ़ॉर्म पर हमारी चुनी हर कैटेगरी और हर प्रोडक्ट, एक जगह। हमारे लिंक से हर ऑर्डर ₹1,000 नकद जीतने की एंट्री है।", "सभी प्रोडक्ट"],
+  gu: ["બધી ડીલ્સ – મહિલાઓના ડ્રેસ, પલાઝો, કો-ઓર્ડ સેટ અને વધુ | Intelligent Seller", "બધી ડીલ્સ", "વિશ્વાસપાત્ર પ્લેટફોર્મ પર અમે પસંદ કરેલી દરેક કેટેગરી અને દરેક પ્રોડક્ટ, એક જગ્યાએ. અમારી લિંકથી દરેક ઓર્ડર ₹1,000 રોકડા જીતવાની એન્ટ્રી છે.", "બધી પ્રોડક્ટ"],
+  mr: ["सर्व डील्स – महिलांचे ड्रेस, पलाझो, को-ऑर्ड सेट आणि अधिक | Intelligent Seller", "सर्व डील्स", "विश्वासार्ह प्लॅटफॉर्मवर आम्ही निवडलेली प्रत्येक कॅटेगरी आणि प्रत्येक प्रॉडक्ट, एकाच ठिकाणी.", "सर्व प्रॉडक्ट"],
+  bn: ["সব ডিল – মহিলাদের ড্রেস, পালাজো, কো-অর্ড সেট ও আরও | Intelligent Seller", "সব ডিল", "বিশ্বস্ত প্ল্যাটফর্মে আমাদের বাছাই করা প্রতিটি ক্যাটাগরি ও প্রোডাক্ট, এক জায়গায়।", "সব প্রোডাক্ট"],
+  ta: ["அனைத்து டீல்கள் – பெண்களின் டிரஸ், பலாஸோ, கோ-ஆர்ட் செட் | Intelligent Seller", "அனைத்து டீல்கள்", "நம்பகமான தளங்களில் நாங்கள் தேர்ந்தெடுத்த ஒவ்வொரு வகையும் பொருளும், ஒரே இடத்தில்.", "அனைத்து பொருட்கள்"],
+  te: ["అన్ని డీల్స్ – మహిళల డ్రెస్‌లు, పలాజో, కో-ఆర్డ్ సెట్‌లు | Intelligent Seller", "అన్ని డీల్స్", "నమ్మకమైన ప్లాట్‌ఫామ్‌లలో మేము ఎంచుకున్న ప్రతి కేటగిరీ, ప్రతి ఉత్పత్తి, ఒకే చోట.", "అన్ని ఉత్పత్తులు"],
+  kn: ["ಎಲ್ಲ ಡೀಲ್‌ಗಳು – ಮಹಿಳೆಯರ ಡ್ರೆಸ್, ಪಲಾಜೊ, ಕೋ-ಆರ್ಡ್ ಸೆಟ್ | Intelligent Seller", "ಎಲ್ಲ ಡೀಲ್‌ಗಳು", "ವಿಶ್ವಾಸಾರ್ಹ ಪ್ಲಾಟ್‌ಫಾರ್ಮ್‌ಗಳಲ್ಲಿ ನಾವು ಆರಿಸಿದ ಪ್ರತಿ ವರ್ಗ ಮತ್ತು ಉತ್ಪನ್ನ, ಒಂದೇ ಕಡೆ.", "ಎಲ್ಲ ಉತ್ಪನ್ನಗಳು"],
+  ml: ["എല്ലാ ഡീലുകളും – സ്ത്രീകളുടെ ഡ്രസ്, പലാസോ, കോ-ഓർഡ് സെറ്റ് | Intelligent Seller", "എല്ലാ ഡീലുകളും", "വിശ്വസനീയ പ്ലാറ്റ്‌ഫോമുകളിൽ ഞങ്ങൾ തിരഞ്ഞെടുത്ത എല്ലാ വിഭാഗങ്ങളും ഉൽപ്പന്നങ്ങളും, ഒരിടത്ത്.", "എല്ലാ ഉൽപ്പന്നങ്ങളും"],
+  pa: ["ਸਾਰੀਆਂ ਡੀਲਾਂ – ਔਰਤਾਂ ਦੀਆਂ ਡਰੈੱਸਾਂ, ਪਲਾਜ਼ੋ, ਕੋ-ਆਰਡ ਸੈੱਟ | Intelligent Seller", "ਸਾਰੀਆਂ ਡੀਲਾਂ", "ਭਰੋਸੇਯੋਗ ਪਲੇਟਫ਼ਾਰਮਾਂ 'ਤੇ ਸਾਡੀ ਚੁਣੀ ਹਰ ਕੈਟੇਗਰੀ ਅਤੇ ਹਰ ਪ੍ਰੋਡਕਟ, ਇੱਕ ਥਾਂ।", "ਸਾਰੇ ਪ੍ਰੋਡਕਟ"]
+};
 
 // Category text for the 7 template languages.
 for (const cat of CATEGORIES) {
@@ -67,6 +80,7 @@ const liveCats = CATEGORIES.filter((c) => matchProducts(c).length);
 
 const catUrl = (lang, slug) => `${SITE}${LANGS[lang].dir}deals/${slug}/`;
 const prodUrl = (lang, slug) => `${SITE}${LANGS[lang].dir}p/${slug}/`;
+const hubUrl = (lang) => `${SITE}${LANGS[lang].dir}deals/`;
 
 // ---------- Shared page parts ----------
 function head({ lang, title, desc, url, image, alternates, jsonld }) {
@@ -141,7 +155,7 @@ for (const cat of liveCats) {
 <body>
 ${topbar(lang, urlFor)}
 <main class="wrap">
-  <nav class="crumbs"><a href="${BASE}">${esc(L.home)}</a> › <span>${esc(T.h1)}</span></nav>
+  <nav class="crumbs"><a href="${BASE}">${esc(L.home)}</a> › <a href="${hubUrl(lang)}">${esc(HUB[lang][1])}</a> › <span>${esc(T.h1)}</span></nav>
   <section class="search-panel">
     <div class="say"><div class="av" aria-hidden="true">IS</div><div class="bubble"><h1>${esc(T.h1)}</h1><p>${esc(T.intro)}</p></div></div>
     <form class="bar" action="${BASE}" method="get" role="search"><input name="q" value="${esc(cat.q)}" aria-label="Search"><button type="submit" class="btn btn-primary">${esc(L.searchBtn)}</button></form>
@@ -173,7 +187,7 @@ ${topbar(lang, urlFor)}
 `;
     write(`${L.dir}deals/${cat.slug}/index.html`, html);
   }
-  sitemapEntries.push({ urlFor, priority: "0.8" });
+  sitemapEntries.push({ urlFor, priority: "0.8", images: items.map((p) => p.image).filter(Boolean) });
 }
 
 // ---------- Product pages (English, Hindi, Gujarati) ----------
@@ -230,7 +244,40 @@ ${topbar(lang, urlFor)}
 `;
     write(`${L.dir}p/${p.slug}/index.html`, html);
   }
-  sitemapEntries.push({ urlFor, priority: "0.7" });
+  sitemapEntries.push({ urlFor, priority: "0.7", images: p.image ? [p.image] : [], caption: p.title });
+}
+
+// ---------- "All deals" hub page (10 languages) ----------
+{
+  const urlFor = Object.fromEntries(Object.keys(LANGS).map((l) => [l, hubUrl(l)]));
+  for (const lang of Object.keys(LANGS)) {
+    const L = LANGS[lang], [title, h1, intro, allT] = HUB[lang], url = urlFor[lang];
+    const pLang = PRODUCT_LANGS.includes(lang) ? lang : "en";
+    const cats = liveCats.filter((c) => c[lang]);
+    const jsonld = [
+      ld({ "@context": "https://schema.org", "@type": "BreadcrumbList", itemListElement: [{ "@type": "ListItem", position: 1, name: L.home, item: SITE }, { "@type": "ListItem", position: 2, name: h1, item: url }] }),
+      ld({ "@context": "https://schema.org", "@type": "ItemList", name: h1, itemListElement: cats.map((c, i) => ({ "@type": "ListItem", position: i + 1, name: c[lang].h1, url: catUrl(lang, c.slug) })) })
+    ].join("\n");
+    const html = `${head({ lang, title, desc: intro, url, image: products[0]?.image, alternates: hreflangs(urlFor), jsonld })}
+<body>
+${topbar(lang, urlFor)}
+<main class="wrap">
+  <nav class="crumbs"><a href="${BASE}">${esc(L.home)}</a> › <span>${esc(h1)}</span></nav>
+  <section class="search-panel"><div class="say"><div class="av" aria-hidden="true">IS</div><div class="bubble"><h1>${esc(h1)}</h1><p>${esc(intro)}</p></div></div>
+    <form class="bar" action="${BASE}" method="get" role="search"><input name="q" aria-label="Search"><button type="submit" class="btn btn-primary">${esc(L.searchBtn)}</button></form></section>
+  <div class="deals hub">${cats.map((c) => { const first = matchProducts(c)[0]; return `
+    <a class="deal hub-card" href="${catUrl(lang, c.slug)}">
+      <span class="deal-img">${first?.image ? `<img src="${esc(first.image)}" alt="${esc(c[lang].h1)}" loading="lazy" width="300" height="300">` : ""}</span>
+      <h2 class="deal-h">${esc(c[lang].h1)}</h2><span class="meta">${matchProducts(c).length}</span></a>`; }).join("")}</div>
+  <section class="panel"><h2>${esc(allT)}</h2><ul class="seo-list">${products.map((p) => `<li><a href="${prodUrl(pLang, p.slug)}">${esc(p.title)}</a></li>`).join("")}</ul></section>
+  ${langFooter(urlFor)}
+</main>
+</body>
+</html>
+`;
+    write(`${L.dir}deals/index.html`, html);
+  }
+  sitemapEntries.push({ urlFor, priority: "0.9" });
 }
 
 // ---------- Home page: static product list, categories, structured data ----------
@@ -239,7 +286,7 @@ const listHtml = products.length
       .map((p) => `<li><a href="${prodUrl("en", p.slug)}">${esc(p.title)}</a> – ${esc(p.platform || "")}${p.free ? " – FREE" : ""}</li>`).join("")}</ul></section>`
   : "";
 const catLinks = liveCats.length
-  ? `<section class="panel"><h2>Shop by category</h2><ul class="seo-list cat-links">${liveCats.map((c) =>
+  ? `<section class="panel"><h2>Shop by category</h2><p><a href="${SITE}deals/">All deals</a> · <a href="${SITE}hi/deals/">सभी डील्स</a> · <a href="${SITE}gu/deals/">બધી ડીલ્સ</a></p><ul class="seo-list cat-links">${liveCats.map((c) =>
       `<li><a href="${catUrl("en", c.slug)}">${esc(c.en.h1)}</a> · ${Object.keys(LANGS).filter((l) => l !== "en" && c[l]).map((l) => `<a href="${catUrl(l, c.slug)}" hreflang="${LANGS[l].htmlLang}">${LANGS[l].label}</a>`).join(" · ")}</li>`).join("")}</ul></section>`
   : "";
 const homeLd = [
@@ -281,14 +328,15 @@ ${topbar("en", { en: SITE })}
 
 // ---------- Sitemap and robots.txt ----------
 const today = new Date().toISOString().slice(0, 10);
-const urlEntry = (loc, urlFor, priority) => `  <url><loc>${loc}</loc><lastmod>${today}</lastmod><priority>${priority}</priority>
+const urlEntry = (loc, urlFor, priority, images = []) => `  <url><loc>${loc}</loc><lastmod>${today}</lastmod><priority>${priority}</priority>
+${images.map((i) => `    <image:image><image:loc>${esc(i)}</image:loc></image:image>`).join("\n")}
 ${Object.keys(urlFor).map((l) => `    <xhtml:link rel="alternate" hreflang="${LANGS[l].htmlLang}" href="${urlFor[l]}"/>`).join("\n")}
     <xhtml:link rel="alternate" hreflang="x-default" href="${urlFor.en}"/>
   </url>`;
 fs.writeFileSync(path.join(ROOT, "sitemap.xml"), `<?xml version="1.0" encoding="UTF-8"?>
-<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9" xmlns:xhtml="http://www.w3.org/1999/xhtml">
+<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9" xmlns:xhtml="http://www.w3.org/1999/xhtml" xmlns:image="http://www.google.com/schemas/sitemap-image/1.1">
   <url><loc>${SITE}</loc><lastmod>${today}</lastmod><changefreq>daily</changefreq><priority>1.0</priority></url>
-${sitemapEntries.flatMap((e) => Object.values(e.urlFor).map((u) => urlEntry(u, e.urlFor, e.priority))).join("\n")}
+${sitemapEntries.flatMap((e) => Object.values(e.urlFor).map((u) => urlEntry(u, e.urlFor, e.priority, e.images))).join("\n")}
 </urlset>
 `);
 fs.writeFileSync(path.join(ROOT, "robots.txt"), `User-agent: *

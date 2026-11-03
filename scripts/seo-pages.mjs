@@ -37,7 +37,7 @@ export const CATEGORIES = [
   },
   {
     slug: "maxi-dress-for-women",
-    match: ["maxi", "gown", "dress"],
+    match: ["maxi", "gown"],
     q: "maxi dress for women",
     en: {
       title: "Maxi Dress for Women – Party, Western & Indo-Western Gowns | Best Deals",
@@ -85,6 +85,58 @@ export const CATEGORIES = [
       h1: "મહિલાઓ માટે કો-ઓર્ડ સેટ",
       intro: "કો-ઓર્ડ સેટ એટલે મેચિંગ ટોપ અને બોટમ, જેથી એક જ વારમાં આખો આઉટફિટ તૈયાર. Amazon.in પર અમારી પસંદગી: એથનિક લુક કો-ઓર્ડ સેટ અને કેઝ્યુઅલ, લાઉન્જ અને વેસ્ટર્ન વેર માટે પ્રિન્ટેડ રેયોન શર્ટ-પેન્ટ સેટ.",
       faq: [["કો-ઓર્ડ સેટ એટલે શું?", "કો-ઓર્ડ (કોઓર્ડિનેટેડ) સેટ એક મેચિંગ ટુ-પીસ આઉટફિટ છે, સામાન્ય રીતે એક જ કાપડ કે પ્રિન્ટનું ટોપ કે શર્ટ અને પેન્ટ."], ["શું રેયોન કો-ઓર્ડ સેટ ઉનાળામાં સારો?", "રેયોન હળવું અને હવાદાર હોય છે, એટલે આ પેજ પરનો NAINVISH જેવો રેયોન કો-ઓર્ડ સેટ ગરમીમાં આરામદાયક છે."], ["ભારતમાં કો-ઓર્ડ સેટ ઓનલાઇન ક્યાંથી ખરીદવા?", "આ પેજની Amazon.in લિંકથી."]]
+    }
+  },
+  {
+    slug: "party-dresses-for-women",
+    match: ["bodycon", "midi", "lace", "sequins", "party dress", "shirt dress"],
+    q: "party dress for women",
+    en: {
+      title: "Party Dresses for Women – Bodycon, Midi, Lace & Sequin Dresses | Best Deals",
+      desc: "Hand-picked party dresses for women on Amazon.in: bodycon long dresses, midi one-piece, lace overlay dresses, sequin maxis and belted shirt dresses for parties, dates and evenings. Win ₹1,000 cash.",
+      h1: "Party Dresses for Women",
+      intro: "Going to a party, a date or an evening event? Our picks on Amazon.in include a square-neck bodycon long dress, a midi one-piece, lace overlay dresses with a boat neck, a georgette and sequins maxi and colourblock belted shirt dresses.",
+      faq: [["Which dress is best for an evening party?", "A bodycon long dress, a sequin maxi or a lace overlay dress gives a dressy evening look. The Aahwan bodycon and Miss Chase sequin dresses on this page are made for parties."], ["What should I wear on a date?", "A midi one-piece dress is easy and stylish for a date or dinner. The Leriya midi dress on this page is made for date and evening looks."], ["Where can I buy party dresses online in India?", "Through the Amazon.in links on this page. Size, price and returns are shown on the Amazon product page."]]
+    },
+    hi: {
+      title: "महिलाओं के लिए पार्टी ड्रेस – बॉडीकॉन, मिडी, लेस और सीक्विन ड्रेस | बेस्ट डील्स",
+      desc: "Amazon.in पर महिलाओं के लिए चुनी हुई पार्टी ड्रेस: बॉडीकॉन लॉन्ग ड्रेस, मिडी वन-पीस, लेस ड्रेस, सीक्विन मैक्सी और बेल्ट वाली शर्ट ड्रेस। ₹1,000 नकद जीतें।",
+      h1: "महिलाओं के लिए पार्टी ड्रेस",
+      intro: "पार्टी, डेट या ईवनिंग इवेंट में जा रही हैं? Amazon.in पर हमारी पसंद: स्क्वेयर नेक बॉडीकॉन लॉन्ग ड्रेस, मिडी वन-पीस, बोट नेक लेस ड्रेस, जॉर्जेट-सीक्विन मैक्सी और कलरब्लॉक बेल्ट वाली शर्ट ड्रेस।",
+      faq: [["ईवनिंग पार्टी के लिए कौन-सी ड्रेस सबसे अच्छी है?", "बॉडीकॉन लॉन्ग ड्रेस, सीक्विन मैक्सी या लेस ड्रेस ईवनिंग में शानदार लगती है। इस पेज की Aahwan बॉडीकॉन और Miss Chase सीक्विन ड्रेस पार्टी के लिए हैं।"], ["डेट पर क्या पहनें?", "मिडी वन-पीस ड्रेस डेट या डिनर के लिए आसान और स्टाइलिश है। इस पेज की Leriya मिडी ड्रेस डेट और ईवनिंग लुक के लिए है।"], ["भारत में पार्टी ड्रेस ऑनलाइन कहाँ से खरीदें?", "इस पेज के Amazon.in लिंक से। साइज़, कीमत और रिटर्न Amazon प्रोडक्ट पेज पर दिखते हैं।"]]
+    },
+    gu: {
+      title: "મહિલાઓ માટે પાર્ટી ડ્રેસ – બોડીકોન, મિડી, લેસ અને સિક્વિન ડ્રેસ | બેસ્ટ ડીલ્સ",
+      desc: "Amazon.in પર મહિલાઓ માટે પસંદ કરેલા પાર્ટી ડ્રેસ: બોડીકોન લોંગ ડ્રેસ, મિડી વન-પીસ, લેસ ડ્રેસ, સિક્વિન મેક્સી અને બેલ્ટવાળા શર્ટ ડ્રેસ. ₹1,000 રોકડા જીતો.",
+      h1: "મહિલાઓ માટે પાર્ટી ડ્રેસ",
+      intro: "પાર્ટી, ડેટ કે સાંજના પ્રસંગમાં જાઓ છો? Amazon.in પર અમારી પસંદગી: સ્ક્વેર નેક બોડીકોન લોંગ ડ્રેસ, મિડી વન-પીસ, બોટ નેક લેસ ડ્રેસ, જ્યોર્જેટ-સિક્વિન મેક્સી અને કલરબ્લોક બેલ્ટવાળા શર્ટ ડ્રેસ.",
+      faq: [["સાંજની પાર્ટી માટે કયો ડ્રેસ શ્રેષ્ઠ?", "બોડીકોન લોંગ ડ્રેસ, સિક્વિન મેક્સી કે લેસ ડ્રેસ સાંજે શાનદાર લાગે છે. આ પેજ પરના Aahwan બોડીકોન અને Miss Chase સિક્વિન ડ્રેસ પાર્ટી માટે છે."], ["ડેટ પર શું પહેરવું?", "મિડી વન-પીસ ડ્રેસ ડેટ કે ડિનર માટે સરળ અને સ્ટાઇલિશ છે. આ પેજ પરનો Leriya મિડી ડ્રેસ ડેટ અને સાંજના લુક માટે છે."], ["ભારતમાં પાર્ટી ડ્રેસ ઓનલાઇન ક્યાંથી ખરીદવા?", "આ પેજની Amazon.in લિંકથી. સાઇઝ, કિંમત અને રિટર્ન Amazon પ્રોડક્ટ પેજ પર દેખાય છે."]]
+    }
+  },
+  {
+    slug: "western-wear-for-women",
+    match: ["western", "crop top", "jumpsuit", "tunic", "shirt dress"],
+    q: "western wear for women",
+    en: {
+      title: "Western Wear for Women – Dresses, Tops, Jumpsuits & Co-ords | Best Deals",
+      desc: "Hand-picked western wear for women on Amazon.in: maxi and midi dresses, shirt dresses, crop tops, jumpsuits and co-ord sets for office, college, travel and parties. Win ₹1,000 cash.",
+      h1: "Western Wear for Women",
+      intro: "Build your western wardrobe with our picks on Amazon.in: cotton crop tops, belted shirt dresses, a breathable jumpsuit, printed co-ord sets, and western and indo-western dresses for every occasion.",
+      faq: [["What is included in western wear for women?", "Dresses, tops, crop tops, jumpsuits, co-ord sets, trousers and palazzos in western styles. This page brings together our picks across these."], ["What western wear is good for college?", "Cotton crop tops with palazzos or trousers, shirt dresses and co-ord sets are comfortable and easy to style for college."], ["Where can I buy western wear online in India?", "Through the Amazon.in links on this page."]]
+    },
+    hi: {
+      title: "महिलाओं के लिए वेस्टर्न वियर – ड्रेस, टॉप, जंपसूट और को-ऑर्ड | बेस्ट डील्स",
+      desc: "Amazon.in पर महिलाओं के लिए चुना हुआ वेस्टर्न वियर: मैक्सी और मिडी ड्रेस, शर्ट ड्रेस, क्रॉप टॉप, जंपसूट और को-ऑर्ड सेट, ऑफ़िस, कॉलेज, ट्रैवल और पार्टी के लिए। ₹1,000 नकद जीतें।",
+      h1: "महिलाओं के लिए वेस्टर्न वियर",
+      intro: "Amazon.in पर हमारी पसंद से अपना वेस्टर्न वॉर्डरोब बनाएँ: कॉटन क्रॉप टॉप, बेल्ट वाली शर्ट ड्रेस, हवादार जंपसूट, प्रिंटेड को-ऑर्ड सेट, और हर मौके के लिए वेस्टर्न व इंडो-वेस्टर्न ड्रेस।",
+      faq: [["महिलाओं के वेस्टर्न वियर में क्या आता है?", "वेस्टर्न स्टाइल में ड्रेस, टॉप, क्रॉप टॉप, जंपसूट, को-ऑर्ड सेट, ट्राउज़र और पलाज़ो। यह पेज इन सबमें हमारी पसंद एक जगह दिखाता है।"], ["कॉलेज के लिए कौन-सा वेस्टर्न वियर अच्छा है?", "पलाज़ो या ट्राउज़र के साथ कॉटन क्रॉप टॉप, शर्ट ड्रेस और को-ऑर्ड सेट कॉलेज के लिए आरामदायक और स्टाइल करने में आसान हैं।"], ["भारत में वेस्टर्न वियर ऑनलाइन कहाँ से खरीदें?", "इस पेज के Amazon.in लिंक से।"]]
+    },
+    gu: {
+      title: "મહિલાઓ માટે વેસ્ટર્ન વેર – ડ્રેસ, ટોપ, જમ્પસૂટ અને કો-ઓર્ડ | બેસ્ટ ડીલ્સ",
+      desc: "Amazon.in પર મહિલાઓ માટે પસંદ કરેલા વેસ્ટર્ન વેર: મેક્સી અને મિડી ડ્રેસ, શર્ટ ડ્રેસ, ક્રોપ ટોપ, જમ્પસૂટ અને કો-ઓર્ડ સેટ, ઓફિસ, કોલેજ, પ્રવાસ અને પાર્ટી માટે. ₹1,000 રોકડા જીતો.",
+      h1: "મહિલાઓ માટે વેસ્ટર્ન વેર",
+      intro: "Amazon.in પર અમારી પસંદગીથી તમારો વેસ્ટર્ન વોર્ડરોબ બનાવો: કોટન ક્રોપ ટોપ, બેલ્ટવાળા શર્ટ ડ્રેસ, હવાદાર જમ્પસૂટ, પ્રિન્ટેડ કો-ઓર્ડ સેટ અને દરેક પ્રસંગ માટે વેસ્ટર્ન અને ઇન્ડો-વેસ્ટર્ન ડ્રેસ.",
+      faq: [["મહિલાઓના વેસ્ટર્ન વેરમાં શું આવે?", "વેસ્ટર્ન સ્ટાઇલમાં ડ્રેસ, ટોપ, ક્રોપ ટોપ, જમ્પસૂટ, કો-ઓર્ડ સેટ, ટ્રાઉઝર અને પલાઝો. આ પેજ આ બધામાં અમારી પસંદગી એક જગ્યાએ બતાવે છે."], ["કોલેજ માટે કયા વેસ્ટર્ન વેર સારા?", "પલાઝો કે ટ્રાઉઝર સાથે કોટન ક્રોપ ટોપ, શર્ટ ડ્રેસ અને કો-ઓર્ડ સેટ કોલેજ માટે આરામદાયક અને સ્ટાઇલ કરવામાં સરળ છે."], ["ભારતમાં વેસ્ટર્ન વેર ઓનલાઇન ક્યાંથી ખરીદવા?", "આ પેજની Amazon.in લિંકથી."]]
     }
   },
   {

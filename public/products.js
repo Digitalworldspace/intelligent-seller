@@ -118,5 +118,85 @@ window.IS_PRODUCTS = [
     image: "https://m.media-amazon.com/images/I/81i0qvJAmsL._SX679_.jpg",
     keywords: "women co-ord set coord set rayon printed shirt pant two piece lounge western",
     benefits: ["Rayon, printed shirt and pant", "Two-piece set", "Lounge and western wear"]
+  },
+  {
+    title: "TOPLOT Women's Jumpsuit Co-ord Set | Soft Breathable One-Piece Outfit for Casual & Travel",
+    platform: "Amazon.in",
+    url: "https://link.amazon/B09vSrWPP",
+    image: "https://m.media-amazon.com/images/I/81jJi65qEkL._SX679_.jpg",
+    keywords: "women jumpsuit co-ord set coord one piece outfit casual travel toplot",
+    benefits: ["Soft, breathable fabric", "Comfortable fit with easy movement", "One-piece outfit for casual and travel"]
+  },
+  {
+    title: "Miss Chase Women's Brick Red & Dusty Green Boat Neck Sleeveless Lace Overlaid Dress",
+    platform: "Amazon.in",
+    url: "https://link.amazon/B0gjA5q16",
+    image: "https://m.media-amazon.com/images/I/918Ul+TYEOL._SX679_.jpg",
+    keywords: "women dress lace boat neck sleeveless party dress miss chase western",
+    benefits: ["Lace overlay design", "Boat neck, sleeveless", "Brick red & dusty green colours"]
+  },
+  {
+    title: "Miss Chase Women's Boat Neck Sleeveless Lace Overlaid Dress (Style 2)",
+    platform: "Amazon.in",
+    url: "https://link.amazon/B0iWscZ7B",
+    image: "https://m.media-amazon.com/images/I/A1c9xCdLu2L._SX679_.jpg",
+    keywords: "women dress lace boat neck sleeveless party dress miss chase western",
+    benefits: ["Lace overlay design", "Boat neck, sleeveless", "Regular fit"]
+  },
+  {
+    title: "Amazon Brand Myx Women's Flared Fit Palazzo in Rayon (Plus Sizes Available)",
+    platform: "Amazon.in",
+    url: "https://link.amazon/B0aWf6Y7O",
+    image: "https://m.media-amazon.com/images/I/91PJSQuIqnL._SX679_.jpg",
+    keywords: "women palazzo pants rayon flared plus size myx amazon brand trousers",
+    benefits: ["Soft rayon fabric", "Flared fit", "Plus sizes available"]
+  },
+  {
+    title: "Leriya Fashion Women's Colorblock Shirt Dress | Long Sleeve Belted Tunic | Western Dress",
+    platform: "Amazon.in",
+    url: "https://link.amazon/B0cvM5gYM",
+    image: "https://m.media-amazon.com/images/I/71KTvnz4MxL._SX679_.jpg",
+    keywords: "women shirt dress tunic colorblock belted long sleeve western dress vacation leriya",
+    benefits: ["Colorblock shirt-dress style", "Long sleeves with belt", "Casual and vacation wear"]
+  },
+  {
+    title: "Leriya Fashion Women's Colorblock Shirt Dress | Belted Tunic (Style 2)",
+    platform: "Amazon.in",
+    url: "https://link.amazon/B05gsFj82",
+    image: "https://m.media-amazon.com/images/I/81XyMC2-IeL._SX679_.jpg",
+    keywords: "women shirt dress tunic colorblock belted long sleeve western dress vacation leriya",
+    benefits: ["Colorblock shirt-dress style", "Long sleeves with belt", "Casual and vacation wear"]
+  },
+  {
+    title: "Aahwan Women's 100% Cotton Slim Fit Striped Full Sleeve Crop Top",
+    platform: "Amazon.in",
+    url: "https://link.amazon/B0djam9cL",
+    image: "https://m.media-amazon.com/images/I/816-+CnBXpL._SX679_.jpg",
+    keywords: "women crop top striped cotton full sleeve slim fit tops western aahwan",
+    benefits: ["100% cotton", "Slim fit, full sleeves", "Striped crop top"]
+  },
+  {
+    title: "Aahwan Solid Bodycon Square Neck Long Party Dress for Women & Girls",
+    platform: "Amazon.in",
+    url: "https://link.amazon/B00eOx03G",
+    image: "https://m.media-amazon.com/images/I/61Cbr+89ZCL._SY741_.jpg",
+    keywords: "women girls bodycon dress square neck long party dress solid aahwan",
+    benefits: ["Bodycon fit", "Square neck", "Long party dress"]
+  },
+  {
+    title: "Miss Chase A+ Women's Relaxed Fit Maxi Georgette & Sequins Dress",
+    platform: "Amazon.in",
+    url: "https://link.amazon/B02eIWkqw",
+    image: "https://m.media-amazon.com/images/I/A17ucta4K6L._SX679_.jpg",
+    keywords: "women maxi dress georgette sequins party relaxed fit plus size miss chase",
+    benefits: ["Georgette with sequins", "Relaxed fit maxi", "Party look"]
+  },
+  {
+    title: "Leriya Fashion Women's One Piece Midi Party Dress | Summer, Date & Evening Look",
+    platform: "Amazon.in",
+    url: "https://link.amazon/B04hvQq2r",
+    image: "https://m.media-amazon.com/images/I/81OpiORP2FL._SX679_.jpg",
+    keywords: "women one piece midi dress party summer date evening western leriya",
+    benefits: ["One-piece midi length", "Party, date and evening look", "Summer casual wear"]
   }
 ];
