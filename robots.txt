@@ -1,0 +1,5 @@
+User-agent: *
+Allow: /
+Disallow: /intelligent-seller/public/setup.html
+
+Sitemap: https://digitalworldspace.github.io/intelligent-seller/sitemap.xml

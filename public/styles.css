@@ -323,3 +323,9 @@ pre.copy{white-space:pre-wrap;word-break:break-word;background:var(--sunk);borde
 #results,#deals{scroll-margin-top:calc(env(safe-area-inset-top,0px) + 80px)}
 .deal .cash-note{font-size:12.5px;padding:5px 8px;gap:6px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .deal .cash-note svg{width:14px;height:14px}
+
+.about{font-size:14px;color:var(--muted)}
+.about h2{font-size:16px;color:var(--fg);margin-bottom:6px}
+.about p{margin:0;max-width:90ch}
+.seo-list{list-style:none;margin:0;padding:0;display:grid;gap:6px}
+.seo-list a{color:var(--fg)}
