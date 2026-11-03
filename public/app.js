@@ -8,7 +8,7 @@ import { LANGS, CHIP_QUERIES, t as tr, fmt, isLang } from "./i18n.js";
 import { parseIntent, filteredSearchUrl } from "./intent.js";
 
 const CFG = window.IS_CONFIG || {};
-const CB = { enabled: true, prize: 1000, winnersPerMonth: 1, minOrder: 0, winners: [], ...(CFG.luckyDraw || {}) };
+const CB = { enabled: true, prize: 1000, minOrder: 0, winners: [], ...(CFG.luckyDraw || {}) };
 const MIN_ORDER = Number(CB.minOrder) || 0;
 let WINNERS = Array.isArray(CB.winners) ? CB.winners : [];
 const CONTACT = CFG.contact || {};
@@ -33,18 +33,8 @@ let lang = pickLang();
 const t = (key) => tr(lang, key);
 const amt = () => inr(CB.prize);
 const cbEligible = (price) => CB.enabled && price >= MIN_ORDER;
-const drawVars = () => ({ amt: amt(), n: CB.winnersPerMonth, min: inr(MIN_ORDER) });
+const drawVars = () => ({ amt: amt(), n: 1, min: inr(MIN_ORDER) });
 // The draw happens on the last day of the current month.
-function daysLeft() {
-  const now = new Date();
-  const end = new Date(now.getFullYear(), now.getMonth() + 1, 0);
-  return Math.max(0, Math.round((end - new Date(now.getFullYear(), now.getMonth(), now.getDate())) / 86400000));
-}
-function nextDrawDate() {
-  const now = new Date();
-  const d = new Date(now.getFullYear(), now.getMonth() + 1, 0);
-  return d.toLocaleDateString(lang + "-IN", { day: "numeric", month: "long", year: "numeric" });
-}
 
 // ---------- Icons ----------
 const ICON = {
@@ -172,8 +162,8 @@ function winnersList() {
   if (!CB.enabled) return "";
   const list = WINNERS.slice(0, 6);
   const body = list.length
-    ? `<ul class="winners">${list.map((w) => `<li><span class="w-ic">${ICON.star}</span><span><b>${esc(w.name)}</b>${w.city ? ` · ${esc(w.city)}` : ""}</span><span class="num">${esc(w.month || "")}</span></li>`).join("")}</ul>`
-    : `<p class="min">${esc(fmt(t("noWinners"), { d: nextDrawDate() }))}</p>`;
+    ? `<ul class="winners">${list.map((w) => `<li><span class="w-ic">${ICON.star}</span><span><b>${esc(w.name)}</b>${w.city ? ` · ${esc(w.city)}` : ""}</span><span class="num">${esc(w.date || w.month || "")}</span></li>`).join("")}</ul>`
+    : `<p class="min">${esc(t("noWinners"))}</p>`;
   return `<div class="winners-box"><div class="label">${esc(t("winnersT"))}</div>${body}</div>`;
 }
 
@@ -181,10 +171,9 @@ function cashPanel() {
   if (!CB.enabled) return "";
   const v = drawVars();
   const lines = [
-    [ICON.gift, fmt(t("daysLeft"), { d: daysLeft() })],
-    [ICON.star, fmt(t("winnerEvery"), v)],
+    [ICON.star, t("anyTime")],
     [ICON.check, t("freeEntry")],
-    [ICON.scale, fmt(t("yearPrize"), { y: inr(CB.prize * CB.winnersPerMonth * 12) })]
+    [ICON.gift, fmt(t("trust")[3][0], v)]
   ];
   return `<section class="panel cash-panel cash-banner">
     <div class="label">${esc(t("kCash"))}</div>
@@ -192,7 +181,6 @@ function cashPanel() {
     <h3>${esc(fmt(t("cbTitle"), v))}</h3>
     <ul class="cash-lines">${lines.map(([ic, txt]) => `<li>${ic}<b>${esc(txt)}</b></li>`).join("")}</ul>
     <p>${esc(fmt(t("cbSub"), v))}</p>
-    <p class="draw-date">${ICON.gift}${esc(fmt(t("nextDraw"), { d: nextDrawDate() }))}</p>
     ${MIN_ORDER ? `<p class="min">${esc(fmt(t("fMinErr"), v))}</p>` : ""}
     ${winnersList()}
     <div class="cash-actions"><button type="button" class="btn btn-cash" data-act="claim">${esc(t("cbClaim"))}</button><button type="button" class="btn btn-outline" data-act="terms">${esc(t("cbHow"))}</button></div>
@@ -537,7 +525,7 @@ function openTerms() {
   openSheet(`${head(t("termsBtn"))}
     ${CB.enabled ? `<div class="sec"><h3>${esc(t("cbHow"))}</h3><ol>${t("cbSteps").map((s) => `<li>${esc(s)}</li>`).join("")}</ol></div>
     <div class="sec"><h3>${esc(t("cbTermsT"))}</h3><ul>${t("cbTerms").map((s) => `<li>${esc(fmt(s, drawVars()))}</li>`).join("")}${MIN_ORDER ? `<li>${esc(fmt(t("fMinErr"), drawVars()))}</li>` : ""}</ul></div>
-    <div class="sec"><p>${esc(fmt(t("nextDraw"), { d: nextDrawDate() }))}</p>${winnersList()}</div>` : ""}
+    <div class="sec">${winnersList()}</div>` : ""}
     <div class="sec"><h3>${esc(t("discT"))}</h3><p>${esc(t("disc1"))}</p><p>${esc(t("disc2"))}</p></div>
     <div class="sec"><h3>${esc(t("respT"))}</h3><p>${esc(t("resp1"))}</p><p>${esc(t("resp2"))}</p></div>
     ${CB.enabled ? `<button type="button" class="btn btn-cash btn-block" data-act="claim">${esc(t("cbClaim"))}</button>` : ""}`);

@@ -12,16 +12,16 @@ window.IS_CONFIG = {
   // e.g. "https://linksredirect.com/?cid=YOUR_ID&source=linkkit&url={url}"
   linkTemplate: "",
 
-  // Monthly lucky draw: only the winner gets the prize.
-  // Every verified order placed through this site is one entry. On the last day of each month
-  // you pick the winner(s) at random (see README: "Run the monthly draw") and pay them by UPI.
+  // Lucky draw: only the winner gets the prize.
+  // Every verified order placed through this site is one entry. Whenever you choose,
+  // you pick the winner at random (see README: "Run the draw") and pay them by UPI.
   luckyDraw: {
     enabled: true,
-    prize: 1000,          // ₹ for each winner
-    winnersPerMonth: 1,
+    prize: 1000,          // ₹ for the winner
     minOrder: 0,          // minimum order amount in ₹ to enter (0 = any order)
+    // There is no fixed draw date: run the draw whenever you like and announce the winner.
     // Shown on the site when no server is connected. Add each winner after the draw, newest first.
-    // Use first name + initial only, e.g. { month: "2026-11", name: "Priya S.", city: "Surat" }
+    // Use first name + initial only, e.g. { date: "3 Nov 2026", name: "Priya S.", city: "Surat" }
     winners: []
   },
 

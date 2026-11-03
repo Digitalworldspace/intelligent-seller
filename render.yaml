@@ -29,7 +29,7 @@ services:
         generateValue: true
       - key: DRAW_PRIZE
         value: "1000"
-      - key: DRAW_WINNERS_PER_MONTH
+      - key: DRAW_WINNERS
         value: "1"
       - key: DRAW_MIN_ORDER
         value: "0"

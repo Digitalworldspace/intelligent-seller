@@ -19,21 +19,21 @@ The customer only searches. The Intelligent Seller looks up products on India's 
 
 - **Chat style, mobile first**: the seller greets the customer, the search box is pinned at the bottom like a messaging app, and the best pick, its benefits, other options and trusted sites appear inside the conversation.
 - **10 languages**: English, हिन्दी, ગુજરાતી, मराठी, বাংলা, தமிழ், తెలుగు, ಕನ್ನಡ, മലയാളം, ਪੰਜਾਬੀ. The site picks the phone's language automatically; customers can change it from the top bar. All text lives in `public/i18n.js`. Please have a native speaker review each language before launch.
-- **Monthly ₹1,000 lucky draw: only the winner gets the prize.** Every verified order placed through the site is one entry. On the last day of each month one winner is picked at random and paid by UPI. Set it in `public/config.js` (`luckyDraw`) and `DRAW_*` on the server.
+- **₹1,000 lucky draw: only the winner gets the prize.** Every verified order placed through the site is one entry. There is no fixed draw date: run the draw whenever you like, and the winner is picked at random and paid by UPI. Set it in `public/config.js` (`luckyDraw`) and `DRAW_*` on the server.
   - Lucky draws tied to a purchase can fall under lottery and promotion laws in India, which differ by state. Have the draw rules checked by a CA or lawyer before launch.
 
-### Run the monthly draw (with the server)
+### Run the draw (with the server)
 
 All owner calls need the header `x-admin-key: YOUR_ADMIN_KEY`.
 
 1. **See entries**: `GET /api/cashback/claims`
 2. **Verify** each entry against your Amazon/Flipkart affiliate dashboard (order exists, not returned):
    `POST /api/draw/verify` with `{"ids":["<entry id>", ...], "status":"verified"}` (or `"rejected"`)
-3. **Run the draw** on the last day of the month: `POST /api/draw/run` with `{"month":"2026-11"}`.
-   The winner is picked at random from that month's verified entries, saved to `data/winners.json`, and shown on the site as first name + initial.
+3. **Run the draw** whenever you like: `POST /api/draw/run` (optional body `{"city":"Surat"}`).
+   The winner is picked at random from verified entries that were not in an earlier draw, saved to `data/winners.json`, and shown on the site as first name + initial with the date.
 4. **Pay** the winner on the UPI ID in the result, within 7 days.
 
-Without the server (GitHub Pages only), entries reach you on WhatsApp/email (`contact` in `public/config.js`). Pick the winner yourself and add them to `luckyDraw.winners` in `public/config.js`, e.g. `{ month: "2026-11", name: "Priya S.", city: "Surat" }`.
+Without the server (GitHub Pages only), entries reach you on WhatsApp/email (`contact` in `public/config.js`). Pick the winner yourself and add them to `luckyDraw.winners` in `public/config.js`, e.g. `{ date: "3 Nov 2026", name: "Priya S.", city: "Surat" }`.
 
 ## Where the data comes from
 

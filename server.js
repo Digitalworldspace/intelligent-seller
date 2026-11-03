@@ -49,7 +49,7 @@ app.get("/api/health", (_req, res) => {
     ai: Boolean(env.ANTHROPIC_API_KEY),
     affiliate: { amazonTag: Boolean(env.AMAZON_PARTNER_TAG), flipkartId: Boolean(env.FLIPKART_AFFILIATE_ID), otherStores: Boolean(env.AFFILIATE_LINK_TEMPLATE) },
     claims: true,
-    draw: { prize: DRAW.prize, winnersPerMonth: DRAW.perMonth }
+    draw: { prize: DRAW.prize, winnersPerDraw: DRAW.perDraw }
   });
 });
 
@@ -100,15 +100,15 @@ app.get("/api/search", async (req, res) => {
   res.json(payload);
 });
 
-// ---------- Monthly lucky draw ----------
+// ---------- Lucky draw (no fixed date) ----------
 // Customers send their order as an entry. You verify entries against your affiliate dashboard,
-// then run the draw at month end. Only the winner(s) get the prize.
+// then run the draw whenever you like. Only the winner(s) get the prize.
 const recent = new TtlCache(60 * 60 * 1000, 5000);
 const clean = (v, max) => String(v ?? "").replace(/[\u0000-\u001f]/g, " ").trim().slice(0, max);
 const WINNERS_FILE = path.join(DATA_DIR, "winners.json");
 const DRAW = {
   prize: Number(env.DRAW_PRIZE) || 1000,
-  perMonth: Math.max(1, Number(env.DRAW_WINNERS_PER_MONTH) || 1),
+  perDraw: Math.max(1, Number(env.DRAW_WINNERS) || Number(env.DRAW_WINNERS_PER_MONTH) || 1),
   minOrder: Number(env.DRAW_MIN_ORDER) || 0
 };
 
@@ -160,7 +160,7 @@ app.post("/api/cashback", express.json({ limit: "4kb" }), (req, res) => {
 
 // Public list of winners (first name + initial only).
 app.get("/api/winners", (_req, res) => {
-  res.json({ prize: DRAW.prize, winners: readWinners().map((w) => ({ month: w.month, name: w.publicName, city: w.city || "" })) });
+  res.json({ prize: DRAW.prize, winners: readWinners().map((w) => ({ date: w.date || w.month, name: w.publicName, city: w.city || "" })) });
 });
 
 // ----- Owner only (header x-admin-key: ADMIN_KEY) -----
@@ -182,20 +182,25 @@ app.post("/api/draw/verify", express.json({ limit: "64kb" }), (req, res) => {
   res.json({ ok: true, changed });
 });
 
-// Pick the month's winner(s) at random from verified entries: { "month": "2026-11" }
+// Run the draw any time: picks the winner(s) at random from verified entries
+// that were not in an earlier draw. Body (optional): { "city": "Surat" }
 app.post("/api/draw/run", express.json({ limit: "4kb" }), (req, res) => {
   if (!isAdmin(req)) return res.status(401).json({ error: "Not allowed." });
-  const month = /^\d{4}-\d{2}$/.test(req.body?.month || "") ? req.body.month : monthOf(new Date().toISOString());
-  const winners = readWinners();
-  if (winners.some((w) => w.month === month)) return res.status(409).json({ error: `The draw for ${month} has already been run.`, winners: winners.filter((w) => w.month === month) });
-  const pool = readEntries().filter((r) => r.status === "verified" && monthOf(r.at) === month);
-  if (!pool.length) return res.status(400).json({ error: `No verified entries for ${month}. Verify entries first.` });
+  const entries = readEntries();
+  const pool = entries.filter((r) => r.status === "verified" && !r.drawId);
+  if (!pool.length) return res.status(400).json({ error: "No new verified entries since the last draw. Verify entries first." });
+  const drawId = crypto.randomUUID();
+  const now = new Date();
+  const date = now.toLocaleDateString("en-IN", { day: "numeric", month: "short", year: "numeric", timeZone: "Asia/Kolkata" });
   const picked = [];
   const left = [...pool];
-  while (picked.length < DRAW.perMonth && left.length) picked.push(left.splice(crypto.randomInt(left.length), 1)[0]);
-  const rows = picked.map((e) => ({ month, entryId: e.id, publicName: publicName(e.name), name: e.name, payTo: e.payTo, orderId: e.orderId, platform: e.platform, prize: DRAW.prize, city: clean(req.body?.city, 40), drawnAt: new Date().toISOString(), entries: pool.length }));
-  writeWinners([...rows, ...winners]);
-  res.json({ ok: true, month, entries: pool.length, winners: rows });
+  while (picked.length < DRAW.perDraw && left.length) picked.push(left.splice(crypto.randomInt(left.length), 1)[0]);
+  const rows = picked.map((e) => ({ drawId, date, entryId: e.id, publicName: publicName(e.name), name: e.name, payTo: e.payTo, orderId: e.orderId, platform: e.platform, prize: DRAW.prize, city: clean(req.body?.city, 40), drawnAt: now.toISOString(), entries: pool.length }));
+  // Entries in this draw don't go into the next one.
+  const used = new Set(pool.map((e) => e.id));
+  writeEntries(entries.map((e) => (used.has(e.id) ? { ...e, drawId } : e)));
+  writeWinners([...rows, ...readWinners()]);
+  res.json({ ok: true, date, entries: pool.length, winners: rows });
 });
 
 const port = Number(env.PORT) || 3000;
