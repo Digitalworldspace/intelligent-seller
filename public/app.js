@@ -226,6 +226,32 @@ function ratingText(p) {
   return `<span class="stars num">${p.rating}★</span>${p.ratingType === "seller" ? ` <span>(${esc(t("sellerRating"))})</span>` : ""}<span class="num">${n}</span>`;
 }
 
+// A real, occasion-based line from the seller: no fake urgency, no invented numbers.
+function feelingFor(b) {
+  const text = `${lastQ} ${b.title} ${b.keywords || ""} ${(b.benefits || b.features || []).join(" ")}`.toLowerCase();
+  const rules = [
+    ["party", /party|new year|wedding|sequin|bodycon|gown|evening|પાર્ટી|पार्टी|લગ્ન|शादी/],
+    ["date", /\bdate\b|dinner|midi|ડેટ|डेट/],
+    ["office", /office|formal|work|ઓફિસ|ऑफ़िस|ऑफिस/],
+    ["travel", /travel|trip|journey|vacation|toiletr|પ્રવાસ|यात्रा|सफ़र/],
+    ["college", /college|student|crop top|કોલેજ|कॉलेज/],
+    ["gift", /gift|ગિફ્ટ|ભેટ|गिफ्ट|तोहफ/],
+    ["summer", /summer|breathable|cotton|rayon|light|ઉનાળ|गर्मी/]
+  ];
+  const hit = rules.find(([, re]) => re.test(text));
+  return t("feel_" + (hit ? hit[0] : "default"));
+}
+
+function nextSteps(b) {
+  const p = b.platformName || "Amazon.in";
+  const steps = [fmt(t("step1"), { p }), fmt(t("step2"), { p }), ...(CB.enabled ? [fmt(t("step3"), drawVars())] : [])];
+  return `<div class="pick-section next">
+    <div class="label">${esc(t("nextT"))}</div>
+    <ol class="steps">${steps.map((x) => `<li>${esc(x)}</li>`).join("")}</ol>
+    <p class="reassure">${ICON.lock}<span>${esc(fmt(t("reassure"), { p }))}</span></p>
+  </div>`;
+}
+
 function pickPanel(b, data) {
   const pc = b.mrp ? Math.round((1 - b.price / b.mrp) * 100) : 0;
   const parts = data.scoreParts || [];
@@ -237,6 +263,7 @@ function pickPanel(b, data) {
         <h2>${esc(b.title)}</h2>
         <div class="meta">${ratingText(b)}<span>${esc(b.platformName)}</span></div>
         ${data.seller.bestLine ? `<p class="bestline">${esc(data.seller.bestLine)}</p>` : ""}
+        <p class="feel">${esc(feelingFor(b))}</p>
         <div class="price-row">${b.free ? `<span class="price free">${esc(t("free"))}</span>` : ""}${b.price ? `<span class="price num">₹${inr(b.price)}</span>` : ""}${b.mrp && b.price ? `<span class="mrp num">₹${inr(b.mrp)}</span><span class="off num">${pc}% ${esc(t("off"))}</span>` : ""}</div>
         ${cbEligible(b.price || 0) ? `<div class="cash-note">${ICON.gift}${esc(fmt(t("cbChip"), drawVars()))}</div>` : ""}
       </div>
@@ -252,6 +279,7 @@ function pickPanel(b, data) {
       </div>
       <p class="aff">${esc(t("aff"))}</p>
     </div>
+    ${nextSteps(b)}
     ${parts.length && b.parts ? `<div class="pick-section"><div class="label">${esc(t("scoreTitle"))}</div><div class="scores">${parts.map((s) => `
       <div class="srow"><span>${esc(s.label)}</span><div class="track"><i style="width:${Math.round((b.parts[s.key] / s.max) * 100)}%"></i></div><span class="num">${b.parts[s.key]}/${s.max}</span></div>`).join("")}</div></div>` : ""}
   </article>`;
@@ -305,6 +333,7 @@ function renderWelcome() {
 function renderResult(data) {
   const b = data.best;
   const msgs = [...data.seller.message];
+  if (data.best) msgs.push(feelingFor(data.best));
   if (data.errors?.length) msgs.push(fmt(t("partial"), { list: data.errors.join(", ") }));
   const all = b ? [b, ...(data.others || [])] : [];
   const prices = all.map((p) => p.price).filter(Boolean);
